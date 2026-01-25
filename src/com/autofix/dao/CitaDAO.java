@@ -5,7 +5,9 @@ import com.autofix.util.DatabaseConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CitaDAO {
 
@@ -180,8 +182,63 @@ public class CitaDAO {
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.out.println("Error al eliminar cita: " + e.getMessage());
-            return false;
         }
+        return false;
+    }
+
+    /**
+     * Cancela una cita registrando el motivo, quién la canceló y cuándo
+     * @param id ID de la cita
+     * @param motivo Motivo de la cancelación
+     * @param canceladoPor Nombre de quien cancela
+     * @return true si se canceló correctamente
+     */
+    public boolean cancelarCita(int id, String motivo, String canceladoPor) {
+        String sql = "UPDATE citas SET estado = 'cancelada', " +
+                "motivo_cancelacion = ?, cancelado_por = ?, fecha_cancelacion = NOW() " +
+                "WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, motivo);
+            stmt.setString(2, canceladoPor);
+            stmt.setInt(3, id);
+
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error al cancelar cita: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Obtiene todas las citas canceladas con información de cancelación
+     * @return Lista de citas canceladas
+     */
+    public List<Cita> obtenerCitasCanceladas() {
+        List<Cita> citas = new ArrayList<>();
+        String sql = "SELECT c.*, cl.nombre as nombre_cliente, u.nombre as nombre_usuario, " +
+                "(SELECT GROUP_CONCAT(s.nombre SEPARATOR ', ') FROM detalle_citas dc " +
+                "INNER JOIN servicios s ON dc.id_servicio = s.id WHERE dc.id_cita = c.id) as nombre_servicio " +
+                "FROM citas c " +
+                "INNER JOIN clientes cl ON c.id_cliente = cl.id " +
+                "INNER JOIN usuarios u ON c.id_usuario = u.id " +
+                "WHERE c.estado = 'cancelada' " +
+                "ORDER BY c.fecha_cancelacion DESC";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                Cita cita = extraerCita(rs);
+                citas.add(cita);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al obtener citas canceladas: " + e.getMessage());
+        }
+        return citas;
     }
 
     public int contarCitasHoy() {
@@ -196,6 +253,11 @@ public class CitaDAO {
 
     public int contarCompletadas() {
         String sql = "SELECT COUNT(*) FROM citas WHERE estado = 'completada'";
+        return contarConSQL(sql);
+    }
+
+    public int contarCanceladas() {
+        String sql = "SELECT COUNT(*) FROM citas WHERE estado = 'cancelada'";
         return contarConSQL(sql);
     }
 
@@ -245,20 +307,32 @@ public class CitaDAO {
         cita.setNombreCliente(rs.getString("nombre_cliente"));
         cita.setNombreUsuario(rs.getString("nombre_usuario"));
         cita.setNombreServicio(rs.getString("nombre_servicio"));
+        cita.setArchivada(rs.getBoolean("archivada"));
+
+        // Campos de cancelación (pueden ser null)
+        try {
+            cita.setMotivoCancelacion(rs.getString("motivo_cancelacion"));
+            cita.setCanceladoPor(rs.getString("cancelado_por"));
+            cita.setFechaCancelacion(rs.getTimestamp("fecha_cancelacion"));
+        } catch (SQLException e) {
+            // Los campos pueden no existir en consultas antiguas
+        }
+
         return cita;
     }
 
+    /**
+     * Obtiene todas las citas con un estado específico
+     */
     public List<Cita> obtenerPorEstado(String estado) {
         List<Cita> citas = new ArrayList<>();
         String sql = "SELECT c.*, cl.nombre as nombre_cliente, u.nombre as nombre_usuario, " +
-                "GROUP_CONCAT(s.nombre SEPARATOR ', ') as nombre_servicio " +
+                "(SELECT GROUP_CONCAT(s.nombre SEPARATOR ', ') FROM detalle_citas dc " +
+                "INNER JOIN servicios s ON dc.id_servicio = s.id WHERE dc.id_cita = c.id) as nombre_servicio " +
                 "FROM citas c " +
-                "JOIN clientes cl ON c.id_cliente = cl.id " +
-                "JOIN usuarios u ON c.id_usuario = u.id " +
-                "LEFT JOIN detalle_citas dc ON c.id = dc.id_cita " +
-                "LEFT JOIN servicios s ON dc.id_servicio = s.id " +
+                "INNER JOIN clientes cl ON c.id_cliente = cl.id " +
+                "INNER JOIN usuarios u ON c.id_usuario = u.id " +
                 "WHERE c.estado = ? " +
-                "GROUP BY c.id " +
                 "ORDER BY c.fecha DESC, c.hora DESC";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -274,5 +348,137 @@ public class CitaDAO {
             System.out.println("Error al obtener citas por estado: " + e.getMessage());
         }
         return citas;
+    }
+
+    public boolean cambiarEstado(int id, String nuevoEstado) {
+        String sql = "UPDATE citas SET estado = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, nuevoEstado);
+            stmt.setInt(2, id);
+
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error al cambiar estado: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean archivar(int id) {
+        String sql = "UPDATE citas SET archivada = TRUE WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error al archivar cita: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public List<Cita> obtenerCompletadasPorFecha(java.sql.Date fecha) {
+        List<Cita> citas = new ArrayList<>();
+        String sql = "SELECT c.*, cl.nombre as nombre_cliente, u.nombre as nombre_usuario, " +
+                "(SELECT GROUP_CONCAT(s.nombre SEPARATOR ', ') FROM detalle_citas dc " +
+                "INNER JOIN servicios s ON dc.id_servicio = s.id WHERE dc.id_cita = c.id) as nombre_servicio " +
+                "FROM citas c " +
+                "INNER JOIN clientes cl ON c.id_cliente = cl.id " +
+                "INNER JOIN usuarios u ON c.id_usuario = u.id " +
+                "WHERE c.estado = 'completada' AND c.fecha = ? " +
+                "ORDER BY c.hora ASC";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDate(1, fecha);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                citas.add(extraerCita(rs));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al obtener citas completadas por fecha: " + e.getMessage());
+        }
+        return citas;
+    }
+
+    public List<java.sql.Date> obtenerFechasConCitasCompletadas() {
+        List<java.sql.Date> fechas = new ArrayList<>();
+        String sql = "SELECT DISTINCT fecha FROM citas " +
+                "WHERE estado = 'completada' " +
+                "ORDER BY fecha DESC";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                fechas.add(rs.getDate("fecha"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al obtener fechas: " + e.getMessage());
+        }
+        return fechas;
+    }
+
+    public int contarEnProceso() {
+        String sql = "SELECT COUNT(*) FROM citas WHERE estado = 'en_proceso' AND archivada = FALSE";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al contar citas en proceso: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public double calcularIngresosPorFecha(java.sql.Date fecha) {
+        String sql = "SELECT COALESCE(SUM(precio_final), 0) FROM citas " +
+                "WHERE estado = 'completada' AND fecha = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDate(1, fecha);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getDouble(1);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al calcular ingresos por fecha: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public Map<String, Object> obtenerEstadisticasDia(java.sql.Date fecha) {
+        Map<String, Object> estadisticas = new HashMap<>();
+
+        String sql = "SELECT COUNT(*) as total, COALESCE(SUM(precio_final), 0) as ingresos " +
+                "FROM citas WHERE estado = 'completada' AND fecha = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDate(1, fecha);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                estadisticas.put("totalCitas", rs.getInt("total"));
+                estadisticas.put("ingresos", rs.getDouble("ingresos"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al obtener estadísticas del día: " + e.getMessage());
+        }
+        return estadisticas;
     }
 }

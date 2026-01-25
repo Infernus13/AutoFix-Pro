@@ -38,6 +38,7 @@ public class NuevaCitaDialog extends JDialog {
 
     private List<DetalleCita> serviciosAgregados;
     private boolean guardado = false;
+    private Usuario usuarioActual;
 
     private ClienteDAO clienteDAO;
     private ServicioDAO servicioDAO;
@@ -49,9 +50,10 @@ public class NuevaCitaDialog extends JDialog {
     private static final Color COLOR_FONDO = new Color(249, 250, 251);
     private static final Color COLOR_TEXTO = new Color(31, 41, 55);
 
-    public NuevaCitaDialog(Frame parent) {
+    public NuevaCitaDialog(Frame parent, Usuario usuarioActual) {
         super(parent, "Nueva Cita", true);
 
+        this.usuarioActual = usuarioActual;
         clienteDAO = new ClienteDAO();
         servicioDAO = new ServicioDAO();
         usuarioDAO = new UsuarioDAO();
@@ -64,14 +66,17 @@ public class NuevaCitaDialog extends JDialog {
         cargarDatos();
     }
 
+    // Constructor alternativo para compatibilidad
+    public NuevaCitaDialog(Frame parent) {
+        this(parent, null);
+    }
+
     private void configurarDialogo() {
         setSize(600, 750);
         setLocationRelativeTo(getParent());
         setResizable(false);
         getContentPane().setBackground(COLOR_FONDO);
     }
-
-
 
     private void crearComponentes() {
         setLayout(new BorderLayout());
@@ -102,10 +107,16 @@ public class NuevaCitaDialog extends JDialog {
         panelForm.add(cmbCliente);
         panelForm.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // Empleado asignado
+        // Empleado asignado - Solo visible/editable para admin
         panelForm.add(crearLabel("Empleado Asignado *"));
         cmbUsuario = new JComboBox<>();
         configurarCombo(cmbUsuario);
+
+        // Si es trabajador, deshabilitar el combo
+        if (usuarioActual != null && !"administrador".equals(usuarioActual.getRol())) {
+            cmbUsuario.setEnabled(false);
+        }
+
         panelForm.add(cmbUsuario);
         panelForm.add(Box.createRigidArea(new Dimension(0, 12)));
 
@@ -164,8 +175,6 @@ public class NuevaCitaDialog extends JDialog {
         panelFechaHora.add(panelHora);
         panelForm.add(panelFechaHora);
         panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        // Seccion de servicios
 
         // Seccion de servicios
         panelForm.add(crearLabel("Agregar Servicios *"));
@@ -336,9 +345,16 @@ public class NuevaCitaDialog extends JDialog {
         }
 
         // Cargar usuarios/empleados
-        List<Usuario> usuarios = usuarioDAO.obtenerTodos();
-        for (Usuario u : usuarios) {
-            cmbUsuario.addItem(u);
+        if (usuarioActual != null && !"administrador".equals(usuarioActual.getRol())) {
+            // Si es trabajador, solo mostrar su propio usuario
+            cmbUsuario.addItem(usuarioActual);
+            cmbUsuario.setSelectedItem(usuarioActual);
+        } else {
+            // Si es admin, mostrar todos los usuarios
+            List<Usuario> usuarios = usuarioDAO.obtenerTodos();
+            for (Usuario u : usuarios) {
+                cmbUsuario.addItem(u);
+            }
         }
     }
 

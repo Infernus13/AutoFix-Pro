@@ -17,8 +17,8 @@ public class GeneradorFactura {
 
     private static final Font FONT_TITULO = new Font(Font.FontFamily.HELVETICA, 24, Font.BOLD, new BaseColor(31, 41, 55));
     private static final Font FONT_SUBTITULO = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, new BaseColor(37, 99, 235));
-    private static final Font FONT_NORMAL = new Font(Font.FontFamily.HELVETICA, 11, Font.NORMAL, new BaseColor(55, 65, 81));
-    private static final Font FONT_NEGRITA = new Font(Font.FontFamily.HELVETICA, 11, Font.BOLD, new BaseColor(31, 41, 55));
+    private static final Font FONT_NORMAL = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL, new BaseColor(55, 65, 81));
+    private static final Font FONT_NEGRITA = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD, new BaseColor(31, 41, 55));
     private static final Font FONT_GRANDE = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, new BaseColor(31, 41, 55));
     private static final Font FONT_TOTAL = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD, new BaseColor(34, 197, 94));
 
@@ -40,7 +40,7 @@ public class GeneradorFactura {
         String nombreArchivo = carpetaFacturas + "/Factura_" + numeroFactura + ".pdf";
 
         try {
-            Document documento = new Document(PageSize.A4, 50, 50, 50, 50);
+            Document documento = new Document(PageSize.A4, 30, 30, 30, 30);
             PdfWriter.getInstance(documento, new FileOutputStream(nombreArchivo));
             documento.open();
 

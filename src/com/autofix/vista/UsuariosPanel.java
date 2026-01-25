@@ -1,6 +1,6 @@
 package com.autofix.vista;
 
-import com.autofix.dao.UsuarioDAO;
+import com.autofix.controlador.UsuarioController;
 import com.autofix.modelo.Usuario;
 
 import javax.swing.*;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 public class UsuariosPanel extends JPanel {
 
-    private UsuarioDAO usuarioDAO;
+    private UsuarioController usuarioController;
     private List<Integer> idsUsuarios = new ArrayList<>();
     private JTable tablaUsuarios;
     private DefaultTableModel modeloTabla;
@@ -24,7 +24,7 @@ public class UsuariosPanel extends JPanel {
     private static final Color COLOR_GRIS = new Color(107, 114, 128);
 
     public UsuariosPanel() {
-        usuarioDAO = new UsuarioDAO();
+        usuarioController = new UsuarioController();
         configurarPanel();
         crearComponentes();
         cargarDatos();
@@ -109,7 +109,7 @@ public class UsuariosPanel extends JPanel {
             tablaUsuarios.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        // Renderizador para columna Rol
+        // Renderizador para columna Rol (colores)
         tablaUsuarios.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -118,10 +118,11 @@ public class UsuariosPanel extends JPanel {
                         table, value, isSelected, hasFocus, row, column);
                 label.setHorizontalAlignment(JLabel.CENTER);
 
-                if ("administrador".equals(value.toString())) {
-                    label.setForeground(new Color(168, 85, 247));
+                String rol = value.toString();
+                if ("administrador".equals(rol)) {
+                    label.setForeground(new Color(37, 99, 235));
                 } else {
-                    label.setForeground(new Color(59, 130, 246));
+                    label.setForeground(new Color(34, 197, 94));
                 }
                 label.setFont(new Font("Arial", Font.BOLD, 12));
                 return label;
@@ -165,7 +166,7 @@ public class UsuariosPanel extends JPanel {
         modeloTabla.setRowCount(0);
         idsUsuarios.clear();
 
-        List<Usuario> usuarios = usuarioDAO.obtenerTodos();
+        List<Usuario> usuarios = usuarioController.obtenerTodos();
         for (Usuario u : usuarios) {
             idsUsuarios.add(u.getId());
             Object[] fila = {
@@ -196,7 +197,6 @@ public class UsuariosPanel extends JPanel {
         }
 
         int idUsuario = idsUsuarios.get(fila);
-        String nombre = modeloTabla.getValueAt(fila, 0).toString();
         Frame parent = (Frame) SwingUtilities.getWindowAncestor(this);
         EditarUsuarioDialog dialog = new EditarUsuarioDialog(parent, idUsuario);
         dialog.setVisible(true);
@@ -213,29 +213,29 @@ public class UsuariosPanel extends JPanel {
             return;
         }
 
-        int idUsuario = (int) modeloTabla.getValueAt(fila, 0);
-        String nombre = modeloTabla.getValueAt(fila, 1).toString();
-        String rol = modeloTabla.getValueAt(fila, 2).toString();
+        int idUsuario = idsUsuarios.get(fila);
+        String nombre = modeloTabla.getValueAt(fila, 0).toString();
 
-        if ("administrador".equals(rol)) {
-            JOptionPane.showMessageDialog(this, "No se puede eliminar un administrador", "Aviso", JOptionPane.WARNING_MESSAGE);
+        // No permitir eliminar al propio usuario o si solo queda uno
+        if (idsUsuarios.size() <= 1) {
+            JOptionPane.showMessageDialog(this, "Debe haber al menos un usuario en el sistema", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         int respuesta = JOptionPane.showConfirmDialog(
                 this,
                 "¿Eliminar el usuario '" + nombre + "'?",
-                "Confirmar eliminacion",
+                "Confirmar",
                 JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE
+                JOptionPane.QUESTION_MESSAGE
         );
 
         if (respuesta == JOptionPane.YES_OPTION) {
-            if (usuarioDAO.eliminar(idUsuario)) {
+            if (usuarioController.eliminar(idUsuario)) {
                 JOptionPane.showMessageDialog(this, "Usuario eliminado", "Exito", JOptionPane.INFORMATION_MESSAGE);
                 cargarDatos();
             } else {
-                JOptionPane.showMessageDialog(this, "No se puede eliminar: tiene citas asignadas", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error al eliminar", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

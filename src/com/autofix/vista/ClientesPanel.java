@@ -1,6 +1,6 @@
 package com.autofix.vista;
 
-import com.autofix.dao.ClienteDAO;
+import com.autofix.controlador.ClienteController;
 import com.autofix.modelo.Cliente;
 
 import javax.swing.*;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 public class ClientesPanel extends JPanel {
 
-    private ClienteDAO clienteDAO;
+    private ClienteController clienteController;
     private JTable tablaClientes;
     private DefaultTableModel modeloTabla;
     private JTextField txtBuscar;
@@ -25,7 +25,7 @@ public class ClientesPanel extends JPanel {
     private static final Color COLOR_GRIS = new Color(107, 114, 128);
 
     public ClientesPanel() {
-        clienteDAO = new ClienteDAO();
+        clienteController = new ClienteController();
         configurarPanel();
         crearComponentes();
         cargarDatos();
@@ -162,7 +162,7 @@ public class ClientesPanel extends JPanel {
         modeloTabla.setRowCount(0);
         idsClientes.clear();
 
-        List<Cliente> clientes = clienteDAO.obtenerTodos();
+        List<Cliente> clientes = clienteController.obtenerTodos();
         for (Cliente c : clientes) {
             idsClientes.add(c.getId());
             Object[] fila = {
@@ -178,23 +178,25 @@ public class ClientesPanel extends JPanel {
     private void buscarClientes() {
         String busqueda = txtBuscar.getText().trim();
         modeloTabla.setRowCount(0);
+        idsClientes.clear();
 
-        List<Cliente> clientes;
-        if (busqueda.isEmpty()) {
-            clientes = clienteDAO.obtenerTodos();
-        } else {
-            clientes = clienteDAO.buscarPorNombre(busqueda);
-        }
+        List<Cliente> clientes = clienteController.obtenerTodos();
 
         for (Cliente c : clientes) {
-            Object[] fila = {
-                    c.getId(),
-                    c.getNombre(),
-                    c.getTelefono(),
-                    c.getEmail() != null ? c.getEmail() : "-",
-                    c.getDireccion() != null ? c.getDireccion() : "-"
-            };
-            modeloTabla.addRow(fila);
+            // Filtrar por nombre o teléfono
+            if (busqueda.isEmpty() ||
+                    c.getNombre().toLowerCase().contains(busqueda.toLowerCase()) ||
+                    c.getTelefono().contains(busqueda)) {
+
+                idsClientes.add(c.getId());
+                Object[] fila = {
+                        c.getNombre(),
+                        c.getTelefono(),
+                        c.getEmail() != null ? c.getEmail() : "",
+                        c.getDireccion() != null ? c.getDireccion() : ""
+                };
+                modeloTabla.addRow(fila);
+            }
         }
     }
 
@@ -216,7 +218,6 @@ public class ClientesPanel extends JPanel {
         }
 
         int idCliente = idsClientes.get(fila);
-        String nombre = modeloTabla.getValueAt(fila, 0).toString();
         Frame parent = (Frame) SwingUtilities.getWindowAncestor(this);
         EditarClienteDialog dialog = new EditarClienteDialog(parent, idCliente);
         dialog.setVisible(true);
@@ -233,8 +234,8 @@ public class ClientesPanel extends JPanel {
             return;
         }
 
-        int idCliente = (int) modeloTabla.getValueAt(fila, 0);
-        String nombre = modeloTabla.getValueAt(fila, 1).toString();
+        int idCliente = idsClientes.get(fila);
+        String nombre = modeloTabla.getValueAt(fila, 0).toString();
 
         int respuesta = JOptionPane.showConfirmDialog(
                 this,
@@ -245,7 +246,7 @@ public class ClientesPanel extends JPanel {
         );
 
         if (respuesta == JOptionPane.YES_OPTION) {
-            if (clienteDAO.eliminar(idCliente)) {
+            if (clienteController.eliminar(idCliente)) {
                 JOptionPane.showMessageDialog(this, "Cliente eliminado", "Exito", JOptionPane.INFORMATION_MESSAGE);
                 cargarDatos();
             } else {

@@ -4,11 +4,17 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
+/**
+ * Modelo que representa una cita del taller
+ * Incluye campos para gestión de cancelaciones
+ *
+ * @author Cristian Sánchez
+ * @version 2.0
+ */
 public class Cita {
 
     private int id;
     private int idCliente;
-    private int idServicio;
     private int idUsuario;
     private String matricula;
     private String modeloCoche;
@@ -17,41 +23,35 @@ public class Cita {
     private String estado;
     private double precioFinal;
     private String notas;
+    private boolean archivada;
     private Timestamp fechaCreacion;
 
-    // Campos adicionales para mostrar nombres (no IDs)
+    // Campos para cancelación
+    private String motivoCancelacion;
+    private String canceladoPor;
+    private Timestamp fechaCancelacion;
+
+    // Campos auxiliares para mostrar en tablas (no se guardan en BD)
     private String nombreCliente;
-    private String nombreServicio;
     private String nombreUsuario;
+    private String nombreServicio;
 
     // Constructor vacío
     public Cita() {}
 
-    // Constructor completo
-    public Cita(int id, int idCliente, int idServicio, int idUsuario, Date fecha, Time hora,
-                String estado, double precioFinal, String notas, Timestamp fechaCreacion) {
-        this.id = id;
+    // Constructor con parámetros básicos
+    public Cita(int idCliente, int idUsuario, String matricula, String modeloCoche,
+                Date fecha, Time hora, double precioFinal, String notas) {
         this.idCliente = idCliente;
-        this.idServicio = idServicio;
         this.idUsuario = idUsuario;
+        this.matricula = matricula;
+        this.modeloCoche = modeloCoche;
         this.fecha = fecha;
         this.hora = hora;
-        this.estado = estado;
         this.precioFinal = precioFinal;
         this.notas = notas;
-        this.fechaCreacion = fechaCreacion;
-    }
-
-    // Constructor para crear nueva cita
-    public Cita(int idCliente, int idServicio, int idUsuario, Date fecha, Time hora, double precioFinal, String notas) {
-        this.idCliente = idCliente;
-        this.idServicio = idServicio;
-        this.idUsuario = idUsuario;
-        this.fecha = fecha;
-        this.hora = hora;
         this.estado = "pendiente";
-        this.precioFinal = precioFinal;
-        this.notas = notas;
+        this.archivada = false;
     }
 
     // Getters y Setters
@@ -71,20 +71,28 @@ public class Cita {
         this.idCliente = idCliente;
     }
 
-    public int getIdServicio() {
-        return idServicio;
-    }
-
-    public void setIdServicio(int idServicio) {
-        this.idServicio = idServicio;
-    }
-
     public int getIdUsuario() {
         return idUsuario;
     }
 
     public void setIdUsuario(int idUsuario) {
         this.idUsuario = idUsuario;
+    }
+
+    public String getMatricula() {
+        return matricula;
+    }
+
+    public void setMatricula(String matricula) {
+        this.matricula = matricula;
+    }
+
+    public String getModeloCoche() {
+        return modeloCoche;
+    }
+
+    public void setModeloCoche(String modeloCoche) {
+        this.modeloCoche = modeloCoche;
     }
 
     public Date getFecha() {
@@ -127,6 +135,14 @@ public class Cita {
         this.notas = notas;
     }
 
+    public boolean isArchivada() {
+        return archivada;
+    }
+
+    public void setArchivada(boolean archivada) {
+        this.archivada = archivada;
+    }
+
     public Timestamp getFechaCreacion() {
         return fechaCreacion;
     }
@@ -135,20 +151,38 @@ public class Cita {
         this.fechaCreacion = fechaCreacion;
     }
 
+    // Getters y Setters para cancelación
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
+    }
+
+    public String getCanceladoPor() {
+        return canceladoPor;
+    }
+
+    public void setCanceladoPor(String canceladoPor) {
+        this.canceladoPor = canceladoPor;
+    }
+
+    public Timestamp getFechaCancelacion() {
+        return fechaCancelacion;
+    }
+
+    public void setFechaCancelacion(Timestamp fechaCancelacion) {
+        this.fechaCancelacion = fechaCancelacion;
+    }
+
+    // Getters y Setters auxiliares
     public String getNombreCliente() {
         return nombreCliente;
     }
 
     public void setNombreCliente(String nombreCliente) {
         this.nombreCliente = nombreCliente;
-    }
-
-    public String getNombreServicio() {
-        return nombreServicio;
-    }
-
-    public void setNombreServicio(String nombreServicio) {
-        this.nombreServicio = nombreServicio;
     }
 
     public String getNombreUsuario() {
@@ -159,32 +193,22 @@ public class Cita {
         this.nombreUsuario = nombreUsuario;
     }
 
+    public String getNombreServicio() {
+        return nombreServicio;
+    }
+
+    public void setNombreServicio(String nombreServicio) {
+        this.nombreServicio = nombreServicio;
+    }
+
     @Override
     public String toString() {
         return "Cita{" +
                 "id=" + id +
-                ", cliente='" + nombreCliente + '\'' +
-                ", servicio='" + nombreServicio + '\'' +
+                ", cliente=" + nombreCliente +
+                ", vehiculo=" + modeloCoche +
                 ", fecha=" + fecha +
-                ", hora=" + hora +
-                ", estado='" + estado + '\'' +
-                ", precio=" + precioFinal +
+                ", estado=" + estado +
                 '}';
-    }
-
-    public String getMatricula() {
-        return matricula;
-    }
-
-    public void setMatricula(String matricula) {
-        this.matricula = matricula;
-    }
-
-    public String getModeloCoche() {
-        return modeloCoche;
-    }
-
-    public void setModeloCoche(String modeloCoche) {
-        this.modeloCoche = modeloCoche;
     }
 }

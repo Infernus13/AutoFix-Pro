@@ -1,6 +1,6 @@
 package com.autofix.vista;
 
-import com.autofix.dao.UsuarioDAO;
+import com.autofix.controlador.UsuarioController;
 import com.autofix.modelo.Usuario;
 
 import javax.swing.*;
@@ -13,6 +13,7 @@ public class LoginFrame extends JFrame {
     private JPasswordField txtPassword;
     private JButton btnLogin;
     private JLabel lblMensaje;
+    private UsuarioController usuarioController;
 
     // Colores
     private static final Color COLOR_FONDO = new Color(249, 250, 251);
@@ -21,6 +22,7 @@ public class LoginFrame extends JFrame {
     private static final Color COLOR_GRIS = new Color(107, 114, 128);
 
     public LoginFrame() {
+        usuarioController = new UsuarioController();
         configurarVentana();
         crearComponentes();
     }
@@ -153,19 +155,19 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        // Intentar login
-        UsuarioDAO usuarioDAO = new UsuarioDAO();
-        Usuario usuario = usuarioDAO.login(email, password);
+        // Intentar login usando el controlador
+        Usuario usuario = usuarioController.login(email, password);
 
         if (usuario != null) {
             lblMensaje.setText("Bienvenido, " + usuario.getNombre());
             lblMensaje.setForeground(new Color(34, 197, 94));
 
             // Abrir ventana principal
+            LoginFrame loginFrame = this;
             SwingUtilities.invokeLater(() -> {
                 MainFrame mainFrame = new MainFrame(usuario);
                 mainFrame.setVisible(true);
-                this.dispose();
+                loginFrame.dispose();
             });
         } else {
             lblMensaje.setText("Email o contrasena incorrectos");

@@ -105,22 +105,38 @@ public class ClienteDAO {
     }
 
     // Insertar nuevo cliente
+    // En ClienteDAO.java
+    // Método insertar CORREGIDO en ClienteDAO.java
     public boolean insertar(Cliente cliente) {
-        String sql = "INSERT INTO clientes (nombre, telefono, email, direccion) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO clientes (nombre, email, telefono, direccion) VALUES (?, ?, ?, ?)";
 
+        // NOTA: Agregar Statement.RETURN_GENERATED_KEYS
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, cliente.getNombre());
-            stmt.setString(2, cliente.getTelefono());
-            stmt.setString(3, cliente.getEmail());
+            stmt.setString(2, cliente.getEmail());
+            stmt.setString(3, cliente.getTelefono());
             stmt.setString(4, cliente.getDireccion());
 
-            return stmt.executeUpdate() > 0;
+            int filasAfectadas = stmt.executeUpdate();
+
+            if (filasAfectadas > 0) {
+                // OBTENER EL ID GENERADO - ESTO ES CLAVE
+                ResultSet clavesGeneradas = stmt.getGeneratedKeys();
+                if (clavesGeneradas.next()) {
+                    int idGenerado = clavesGeneradas.getInt(1);
+                    cliente.setId(idGenerado);  // ASIGNAR EL ID AL OBJETO
+                    System.out.println("[DEBUG] Cliente insertado con ID: " + idGenerado);
+                    return true;
+                }
+            }
+            return false;
         } catch (SQLException e) {
             System.out.println("Error al insertar cliente: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     // Actualizar cliente

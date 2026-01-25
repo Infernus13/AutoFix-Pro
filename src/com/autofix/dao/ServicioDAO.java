@@ -70,14 +70,14 @@ public class ServicioDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return new Servicio(
-                        rs.getInt("id"),
-                        rs.getString("nombre"),
-                        rs.getString("descripcion"),
-                        rs.getDouble("precio"),
-                        rs.getInt("duracion_min"),
-                        rs.getBoolean("activo")
-                );
+                Servicio servicio = new Servicio();
+                servicio.setId(rs.getInt("id"));
+                servicio.setNombre(rs.getString("nombre"));
+                servicio.setDescripcion(rs.getString("descripcion"));
+                servicio.setPrecio(rs.getDouble("precio"));
+                servicio.setDuracionMin(rs.getInt("duracion_min"));
+                servicio.setActivo(rs.getBoolean("activo"));
+                return servicio;
             }
         } catch (SQLException e) {
             System.out.println("Error al obtener servicio: " + e.getMessage());
@@ -107,7 +107,7 @@ public class ServicioDAO {
         String sql = "INSERT INTO servicios (nombre, descripcion, precio, duracion_min, activo) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, servicio.getNombre());
             stmt.setString(2, servicio.getDescripcion());
@@ -115,7 +115,15 @@ public class ServicioDAO {
             stmt.setInt(4, servicio.getDuracionMin());
             stmt.setBoolean(5, servicio.isActivo());
 
-            return stmt.executeUpdate() > 0;
+            int filas = stmt.executeUpdate();
+
+            if (filas > 0) {
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    servicio.setId(rs.getInt(1));
+                }
+                return true;
+            }
         } catch (SQLException e) {
             System.out.println("Error al insertar servicio: " + e.getMessage());
         }

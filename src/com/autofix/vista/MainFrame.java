@@ -1,8 +1,12 @@
 package com.autofix.vista;
 
-import com.autofix.dao.CitaDAO;
+import com.autofix.controlador.CitaController;
+import com.autofix.controlador.ClienteController;
+import com.autofix.controlador.UsuarioController;
 import com.autofix.modelo.Cita;
+import com.autofix.modelo.Cliente;
 import com.autofix.modelo.Usuario;
+import com.autofix.util.GeneradorFactura;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -12,18 +16,15 @@ import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 
-import com.autofix.modelo.Cliente;
-import com.autofix.dao.ClienteDAO;
-import com.autofix.util.GeneradorFactura;
-import com.autofix.dao.UsuarioDAO;
-
 public class MainFrame extends JFrame {
 
     // Usuario logueado
     private Usuario usuarioActual;
 
-    // DAOs
-    private CitaDAO citaDAO;
+    // Controllers
+    private CitaController citaController;
+    private ClienteController clienteController;
+    private UsuarioController usuarioController;
 
     // Componentes que necesitamos actualizar
     private JLabel lblPendientes;
@@ -31,7 +32,7 @@ public class MainFrame extends JFrame {
     private JLabel lblIngresos;
     private JTable tablaCitas;
     private DefaultTableModel modeloTabla;
-    private UsuariosPanel usuariosPanel;
+    private com.autofix.vista.UsuariosPanel usuariosPanel;
 
     // Lista para guardar los IDs de las citas
     private List<Integer> idsCitas = new ArrayList<>();
@@ -62,7 +63,9 @@ public class MainFrame extends JFrame {
 
     public MainFrame(Usuario usuario) {
         this.usuarioActual = usuario;
-        this.citaDAO = new CitaDAO();
+        this.citaController = new CitaController();
+        this.clienteController = new ClienteController();
+        this.usuarioController = new UsuarioController();
 
         configurarVentana();
         crearComponentes();
@@ -430,6 +433,10 @@ public class MainFrame extends JFrame {
         itemEnProceso.addActionListener(e -> cambiarEstadoCita("en_proceso"));
         menuContextual.add(itemEnProceso);
 
+        JMenuItem itemCancelar = new JMenuItem("❌ Cancelar Cita");
+        itemCancelar.addActionListener(e -> cancelarCitaSeleccionada());
+        menuContextual.add(itemCancelar);
+
         tablaCitas.setComponentPopupMenu(menuContextual);
 
         // Seleccionar fila al hacer clic derecho y doble clic para ver detalles
@@ -550,9 +557,9 @@ public class MainFrame extends JFrame {
     }
 
     private void cargarEstadisticas() {
-        lblPendientes.setText(String.valueOf(citaDAO.contarPendientes()));
-        lblCompletadas.setText(String.valueOf(citaDAO.contarCompletadas()));
-        lblIngresos.setText(String.format("%.2f €", citaDAO.calcularIngresos()));
+        lblPendientes.setText(String.valueOf(citaController.contarPendientes()));
+        lblCompletadas.setText(String.valueOf(citaController.contarCompletadas()));
+        lblIngresos.setText(String.format("%.2f €", citaController.calcularIngresos()));
     }
 
     private void cargarTablaCitas() {
@@ -561,15 +568,18 @@ public class MainFrame extends JFrame {
 
         List<Cita> citas;
 
-        // Si es administrador, ver todas las citas
-        // Si es trabajador, ver solo sus citas
         if ("administrador".equals(usuarioActual.getRol())) {
-            citas = citaDAO.obtenerTodas();
+            citas = citaController.obtenerTodas();
         } else {
-            citas = citaDAO.obtenerPorUsuario(usuarioActual.getId());
+            citas = citaController.obtenerPorUsuario(usuarioActual.getId());
         }
 
         for (Cita cita : citas) {
+            // No mostrar citas archivadas en el dashboard
+            if (cita.isArchivada()) {
+                continue;
+            }
+
             String vehiculo = "";
             if (cita.getMatricula() != null && cita.getModeloCoche() != null) {
                 vehiculo = cita.getMatricula() + " - " + cita.getModeloCoche();
@@ -592,21 +602,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    private void cerrarSesion() {
-        int respuesta = JOptionPane.showConfirmDialog(
-                this,
-                "¿Esta seguro de que desea cerrar sesion?",
-                "Cerrar Sesion",
-                JOptionPane.YES_NO_OPTION
-        );
-
-        if (respuesta == JOptionPane.YES_OPTION) {
-            LoginFrame login = new LoginFrame();
-            login.setVisible(true);
-            this.dispose();
-        }
-    }
-
     // ========== UTILIDADES ==========
 
     private String obtenerIniciales(String nombre) {
@@ -623,7 +618,7 @@ public class MainFrame extends JFrame {
     }
 
     private void abrirNuevaCita() {
-        NuevaCitaDialog dialog = new NuevaCitaDialog(this);
+        NuevaCitaDialog dialog = new NuevaCitaDialog(this, usuarioActual);
         dialog.setVisible(true);
 
         // Si se guardó, recargar datos
@@ -657,36 +652,27 @@ public class MainFrame extends JFrame {
 
         int idCita = idsCitas.get(fila);
         String cliente = modeloTabla.getValueAt(fila, 0).toString();
-        String estado = modeloTabla.getValueAt(fila, 5).toString();
-
-        // No permitir eliminar citas completadas
-        if ("completada".equals(estado)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "No se puede eliminar una cita completada.\nEl registro de ingresos debe mantenerse.",
-                    "Operacion no permitida",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
 
         int respuesta = JOptionPane.showConfirmDialog(
                 this,
-                "¿Eliminar la cita de " + cliente + "?",
-                "Confirmar eliminacion",
+                "¿Archivar la cita de " + cliente + "?\nLa cita se mantendra en Reportes.",
+                "Confirmar",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE
         );
 
         if (respuesta == JOptionPane.YES_OPTION) {
-            if (citaDAO.eliminar(idCita)) {
-                JOptionPane.showMessageDialog(this, "Cita eliminada", "Exito", JOptionPane.INFORMATION_MESSAGE);
+            if (citaController.eliminar(idCita)) {
+                JOptionPane.showMessageDialog(this, "Cita archivada correctamente", "Exito", JOptionPane.INFORMATION_MESSAGE);
                 cargarDatos();
             } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error al archivar", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
+
+
+
 
     private void cambiarEstadoCita(String nuevoEstado) {
         int fila = tablaCitas.getSelectedRow();
@@ -697,7 +683,7 @@ public class MainFrame extends JFrame {
 
         int idCita = idsCitas.get(fila);
 
-        if (citaDAO.actualizarEstado(idCita, nuevoEstado)) {
+        if (citaController.cambiarEstado(idCita, nuevoEstado)) {
             cargarDatos();
 
             // Si se completa la cita, preguntar si generar factura
@@ -721,7 +707,7 @@ public class MainFrame extends JFrame {
 
     private void generarFacturaCita(int idCita) {
         // Obtener cita
-        Cita cita = citaDAO.obtenerPorId(idCita);
+        Cita cita = citaController.obtenerPorId(idCita);
 
         if (cita == null) {
             JOptionPane.showMessageDialog(this, "No se encontro la cita", "Error", JOptionPane.ERROR_MESSAGE);
@@ -729,8 +715,7 @@ public class MainFrame extends JFrame {
         }
 
         // Obtener cliente
-        ClienteDAO clienteDAO = new ClienteDAO();
-        Cliente cliente = clienteDAO.obtenerPorId(cita.getIdCliente());
+        Cliente cliente = clienteController.obtenerPorId(cita.getIdCliente());
 
         if (cliente == null) {
             JOptionPane.showMessageDialog(this, "Error al obtener datos del cliente", "Error", JOptionPane.ERROR_MESSAGE);
@@ -738,8 +723,7 @@ public class MainFrame extends JFrame {
         }
 
         // Obtener nombre del empleado
-        UsuarioDAO usuarioDAO = new UsuarioDAO();
-        Usuario empleado = usuarioDAO.obtenerPorId(cita.getIdUsuario());
+        Usuario empleado = usuarioController.obtenerPorId(cita.getIdUsuario());
         String nombreEmpleado = empleado != null ? empleado.getNombre() : "No asignado";
 
         // Generar factura
@@ -829,5 +813,41 @@ public class MainFrame extends JFrame {
 
         panelContenido.revalidate();
         panelContenido.repaint();
+    }
+
+    private void cerrarSesion() {
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "¿Esta seguro de que desea cerrar sesion?",
+                "Cerrar Sesion",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (respuesta == JOptionPane.YES_OPTION) {
+            LoginFrame login = new LoginFrame();
+            login.setVisible(true);
+            this.dispose();
+        }
+    }
+
+    private void cancelarCitaSeleccionada() {
+        // Obtener cita seleccionada
+        int idCita = (int) tablaCitas.getValueAt(tablaCitas.getSelectedRow(), 0);
+        Cita cita = citaController.obtenerPorId(idCita);
+
+        if (cita != null && citaController.puedeCancelar(cita)) {
+            CancelarCitaDialog dialog = new CancelarCitaDialog(
+                    this, idCita, cita.getNombreCliente(),
+                    cita.getModeloCoche(), usuarioActual.getNombre()
+            );
+            dialog.setVisible(true);
+
+            if (dialog.isConfirmado()) {
+                if (citaController.cancelarCita(idCita, dialog.getMotivo(), dialog.getCanceladoPor())) {
+                    JOptionPane.showMessageDialog(this, "Cita cancelada correctamente");
+                    cargarCitas(); // Refrescar tabla
+                }
+            }
+        }
     }
 }

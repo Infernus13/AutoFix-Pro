@@ -1,6 +1,6 @@
 package com.autofix.vista;
 
-import com.autofix.dao.ServicioDAO;
+import com.autofix.controlador.ServicioController;
 import com.autofix.modelo.Servicio;
 
 import javax.swing.*;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 public class ServiciosPanel extends JPanel {
 
-    private ServicioDAO servicioDAO;
+    private ServicioController servicioController;
     private List<Integer> idsServicios = new ArrayList<>();
     private JTable tablaServicios;
     private DefaultTableModel modeloTabla;
@@ -24,7 +24,7 @@ public class ServiciosPanel extends JPanel {
     private static final Color COLOR_GRIS = new Color(107, 114, 128);
 
     public ServiciosPanel() {
-        servicioDAO = new ServicioDAO();
+        servicioController = new ServicioController();
         configurarPanel();
         crearComponentes();
         cargarDatos();
@@ -146,7 +146,7 @@ public class ServiciosPanel extends JPanel {
         modeloTabla.setRowCount(0);
         idsServicios.clear();
 
-        List<Servicio> servicios = servicioDAO.obtenerTodos();
+        List<Servicio> servicios = servicioController.obtenerTodos();
         for (Servicio s : servicios) {
             idsServicios.add(s.getId());
             Object[] fila = {
@@ -205,7 +205,7 @@ public class ServiciosPanel extends JPanel {
         );
 
         if (respuesta == JOptionPane.YES_OPTION) {
-            if (servicioDAO.eliminar(idServicio)) {
+            if (servicioController.eliminar(idServicio)) {
                 JOptionPane.showMessageDialog(this, "Servicio eliminado", "Exito", JOptionPane.INFORMATION_MESSAGE);
                 cargarDatos();
             } else {
