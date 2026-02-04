@@ -28,7 +28,7 @@ public class LoginFrame extends JFrame {
     }
 
     private void configurarVentana() {
-        setTitle("AutoFix Pro - Iniciar Sesion");
+        setTitle("AutoFix Pro - Iniciar Sesión");
         setSize(400, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -51,7 +51,7 @@ public class LoginFrame extends JFrame {
         lblLogo.setForeground(COLOR_PRIMARIO);
         lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel lblSubtitulo = new JLabel("Sistema de Gestion de Taller");
+        JLabel lblSubtitulo = new JLabel("Sistema de Gestión de Taller");
         lblSubtitulo.setFont(new Font("Arial", Font.PLAIN, 14));
         lblSubtitulo.setForeground(COLOR_GRIS);
         lblSubtitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -82,7 +82,7 @@ public class LoginFrame extends JFrame {
         panelCentral.add(Box.createRigidArea(new Dimension(0, 20)));
 
         // Campo Password
-        JLabel lblPassword = new JLabel("Contrasena");
+        JLabel lblPassword = new JLabel("Contraseña");
         lblPassword.setFont(new Font("Arial", Font.BOLD, 12));
         lblPassword.setForeground(COLOR_TEXTO);
         lblPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -100,8 +100,8 @@ public class LoginFrame extends JFrame {
         panelCentral.add(txtPassword);
         panelCentral.add(Box.createRigidArea(new Dimension(0, 30)));
 
-        // Boton Login
-        btnLogin = new JButton("Iniciar Sesion");
+        // Botón Login
+        btnLogin = new JButton("Iniciar Sesión");
         btnLogin.setMaximumSize(new Dimension(300, 45));
         btnLogin.setBackground(COLOR_PRIMARIO);
         btnLogin.setForeground(Color.WHITE);
@@ -111,7 +111,7 @@ public class LoginFrame extends JFrame {
         btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Accion del boton
+        // Acción del botón
         btnLogin.addActionListener(e -> iniciarSesion());
 
         // Permitir login con Enter
@@ -120,7 +120,7 @@ public class LoginFrame extends JFrame {
         panelCentral.add(btnLogin);
         panelCentral.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Mensaje de error/exito
+        // Mensaje de error/éxito
         lblMensaje = new JLabel(" ");
         lblMensaje.setFont(new Font("Arial", Font.PLAIN, 12));
         lblMensaje.setForeground(Color.RED);
@@ -128,7 +128,7 @@ public class LoginFrame extends JFrame {
 
         panelCentral.add(lblMensaje);
 
-        // Agregar panel central
+        // Agrega panel central
         add(panelCentral, BorderLayout.CENTER);
 
         // Panel inferior con credenciales de prueba
@@ -148,21 +148,21 @@ public class LoginFrame extends JFrame {
         String email = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword());
 
-        // Validar campos vacios
+        // Validar campos vacíos
         if (email.isEmpty() || password.isEmpty()) {
             lblMensaje.setText("Por favor, complete todos los campos");
             lblMensaje.setForeground(Color.RED);
             return;
         }
 
-        // Intentar login usando el controlador
+        // Intenta login usando el controlador
         Usuario usuario = usuarioController.login(email, password);
 
         if (usuario != null) {
             lblMensaje.setText("Bienvenido, " + usuario.getNombre());
             lblMensaje.setForeground(new Color(34, 197, 94));
 
-            // Abrir ventana principal
+            // Abre ventana principal
             LoginFrame loginFrame = this;
             SwingUtilities.invokeLater(() -> {
                 MainFrame mainFrame = new MainFrame(usuario);
@@ -170,7 +170,7 @@ public class LoginFrame extends JFrame {
                 loginFrame.dispose();
             });
         } else {
-            lblMensaje.setText("Email o contrasena incorrectos");
+            lblMensaje.setText("Email o contraseña incorrectos");
             lblMensaje.setForeground(Color.RED);
             txtPassword.setText("");
         }

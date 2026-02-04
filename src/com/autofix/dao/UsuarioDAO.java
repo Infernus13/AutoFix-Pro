@@ -9,7 +9,7 @@ import java.util.List;
 
 public class UsuarioDAO {
 
-    // Verificar login
+    // Verifica login
     public Usuario login(String email, String password) {
         String sql = "SELECT * FROM usuarios WHERE email = ? AND password = ?";
 
@@ -37,7 +37,7 @@ public class UsuarioDAO {
         return null;
     }
 
-    // Obtener todos los usuarios
+    // Obtiene todos los usuarios
     public List<Usuario> obtenerTodos() {
         List<Usuario> usuarios = new ArrayList<>();
         String sql = "SELECT * FROM usuarios ORDER BY nombre";
@@ -62,7 +62,7 @@ public class UsuarioDAO {
         return usuarios;
     }
 
-    // Obtener usuario por ID
+    // Obtiene usuario por ID
     public Usuario obtenerPorId(int id) {
         String sql = "SELECT * FROM usuarios WHERE id = ?";
 
@@ -88,7 +88,7 @@ public class UsuarioDAO {
         return null;
     }
 
-    // Insertar nuevo usuario
+    // Inserta nuevo usuario
     public boolean insertar(Usuario usuario) {
         String sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)";
 
@@ -107,7 +107,7 @@ public class UsuarioDAO {
         return false;
     }
 
-    // Actualizar usuario
+    // Actualiza usuario
     public boolean actualizar(Usuario usuario) {
         String sql = "UPDATE usuarios SET nombre = ?, email = ?, password = ?, rol = ? WHERE id = ?";
 
@@ -127,7 +127,7 @@ public class UsuarioDAO {
         return false;
     }
 
-    // Eliminar usuario
+    // Elimina usuario
     public boolean eliminar(int id) {
         String sql = "DELETE FROM usuarios WHERE id = ?";
 

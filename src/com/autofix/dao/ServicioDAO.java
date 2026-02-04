@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ServicioDAO {
 
-    // Obtener todos los servicios
+    // Obtiene todos los servicios
     public List<Servicio> obtenerTodos() {
         List<Servicio> servicios = new ArrayList<>();
         String sql = "SELECT * FROM servicios ORDER BY nombre";
@@ -34,7 +34,7 @@ public class ServicioDAO {
         return servicios;
     }
 
-    // Obtener solo servicios activos
+    // Obtiene solo servicios activos
     public List<Servicio> obtenerActivos() {
         List<Servicio> servicios = new ArrayList<>();
         String sql = "SELECT * FROM servicios WHERE activo = true ORDER BY nombre";
@@ -59,7 +59,7 @@ public class ServicioDAO {
         return servicios;
     }
 
-    // Obtener servicio por ID
+    // Obtiene servicio por ID
     public Servicio obtenerPorId(int id) {
         String sql = "SELECT * FROM servicios WHERE id = ?";
 
@@ -85,7 +85,7 @@ public class ServicioDAO {
         return null;
     }
 
-    // Contar total de servicios
+    // Cuenta el total de servicios
     public int contarTotal() {
         String sql = "SELECT COUNT(*) FROM servicios WHERE activo = true";
 
@@ -102,7 +102,7 @@ public class ServicioDAO {
         return 0;
     }
 
-    // Insertar nuevo servicio
+    // Inserta un nuevo servicio
     public boolean insertar(Servicio servicio) {
         String sql = "INSERT INTO servicios (nombre, descripcion, precio, duracion_min, activo) VALUES (?, ?, ?, ?, ?)";
 
@@ -130,7 +130,7 @@ public class ServicioDAO {
         return false;
     }
 
-    // Actualizar servicio
+    // Actualiza el servicio
     public boolean actualizar(Servicio servicio) {
         String sql = "UPDATE servicios SET nombre = ?, descripcion = ?, precio = ?, duracion_min = ?, activo = ? WHERE id = ?";
 
@@ -151,7 +151,7 @@ public class ServicioDAO {
         return false;
     }
 
-    // Eliminar servicio (o desactivar)
+    // Elimina el servicio (o desactivar)
     public boolean eliminar(int id) {
         String sql = "UPDATE servicios SET activo = false WHERE id = ?";
 

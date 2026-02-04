@@ -19,7 +19,7 @@ public class GeneradorFactura {
     private static final Font FONT_SUBTITULO = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, new BaseColor(37, 99, 235));
     private static final Font FONT_NORMAL = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL, new BaseColor(55, 65, 81));
     private static final Font FONT_NEGRITA = new Font(Font.FontFamily.HELVETICA, 10, Font.BOLD, new BaseColor(31, 41, 55));
-    private static final Font FONT_GRANDE = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, new BaseColor(31, 41, 55));
+    private static final Font FONT_GRANDE =  new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, new BaseColor(31, 41, 55));
     private static final Font FONT_TOTAL = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD, new BaseColor(34, 197, 94));
 
     public static String generarFactura(Cita cita, Cliente cliente, String nombreEmpleado) { {
@@ -40,7 +40,7 @@ public class GeneradorFactura {
         String nombreArchivo = carpetaFacturas + "/Factura_" + numeroFactura + ".pdf";
 
         try {
-            Document documento = new Document(PageSize.A4, 30, 30, 30, 30);
+            Document documento = new Document(PageSize.A4, 20, 20, 20, 20);
             PdfWriter.getInstance(documento, new FileOutputStream(nombreArchivo));
             documento.open();
 
@@ -239,7 +239,7 @@ public class GeneradorFactura {
     private static void agregarCeldaCabecera(PdfPTable tabla, String texto) {
         PdfPCell celda = new PdfPCell(new Phrase(texto, FONT_NEGRITA));
         celda.setBackgroundColor(new BaseColor(249, 250, 251));
-        celda.setPadding(10);
+        celda.setPadding(5);
         celda.setHorizontalAlignment(Element.ALIGN_CENTER);
         celda.setBorderColor(new BaseColor(229, 231, 235));
         tabla.addCell(celda);

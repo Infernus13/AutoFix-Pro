@@ -69,7 +69,7 @@ public class ClientesPanel extends JPanel {
             }
         });
 
-        // Boton nuevo
+        // Botón nuevo
         JButton btnNuevo = new JButton("+ Nuevo Cliente");
         btnNuevo.setBackground(COLOR_PRIMARIO);
         btnNuevo.setForeground(Color.WHITE);
@@ -125,7 +125,7 @@ public class ClientesPanel extends JPanel {
             tablaClientes.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        // Menu contextual
+        // Menú contextual
         JPopupMenu menuContextual = new JPopupMenu();
 
         JMenuItem itemEditar = new JMenuItem("Editar cliente");
@@ -183,7 +183,7 @@ public class ClientesPanel extends JPanel {
         List<Cliente> clientes = clienteController.obtenerTodos();
 
         for (Cliente c : clientes) {
-            // Filtrar por nombre o teléfono
+            // Filtra por nombre o teléfono
             if (busqueda.isEmpty() ||
                     c.getNombre().toLowerCase().contains(busqueda.toLowerCase()) ||
                     c.getTelefono().contains(busqueda)) {

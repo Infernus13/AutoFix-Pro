@@ -315,15 +315,15 @@ public class CitaDAO {
             cita.setCanceladoPor(rs.getString("cancelado_por"));
             cita.setFechaCancelacion(rs.getTimestamp("fecha_cancelacion"));
         } catch (SQLException e) {
-            // Los campos pueden no existir en consultas antiguas
+            // Los campos pueden no existir en consultas anteriores
         }
 
         return cita;
     }
 
-    /**
-     * Obtiene todas las citas con un estado específico
-     */
+
+      //Obtiene todas las citas con un estado específico
+
     public List<Cita> obtenerPorEstado(String estado) {
         List<Cita> citas = new ArrayList<>();
         String sql = "SELECT c.*, cl.nombre as nombre_cliente, u.nombre as nombre_usuario, " +

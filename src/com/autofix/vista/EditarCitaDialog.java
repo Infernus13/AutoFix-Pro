@@ -97,7 +97,7 @@ public class EditarCitaDialog extends JDialog {
         panelForm.add(cmbUsuario);
         panelForm.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // Matricula y Modelo
+        // Matrícula y Modelo
         JPanel panelVehiculo = new JPanel(new GridLayout(1, 2, 15, 0));
         panelVehiculo.setBackground(COLOR_FONDO);
         panelVehiculo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));

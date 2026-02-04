@@ -7,6 +7,8 @@ import com.autofix.modelo.Cita;
 import com.autofix.modelo.Cliente;
 import com.autofix.modelo.Usuario;
 import com.autofix.util.GeneradorFactura;
+import com.autofix.dao.HistoricoDAO;
+import com.autofix.vista.CerrarPeriodoDialog;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -19,12 +21,12 @@ import java.util.ArrayList;
 public class MainFrame extends JFrame {
 
     // Usuario logueado
-    private Usuario usuarioActual;
+    private final Usuario usuarioActual;
 
     // Controllers
-    private CitaController citaController;
-    private ClienteController clienteController;
-    private UsuarioController usuarioController;
+    private final CitaController citaController;
+    private final ClienteController clienteController;
+    private final UsuarioController usuarioController;
 
     // Componentes que necesitamos actualizar
     private JLabel lblPendientes;
@@ -35,7 +37,7 @@ public class MainFrame extends JFrame {
     private com.autofix.vista.UsuariosPanel usuariosPanel;
 
     // Lista para guardar los IDs de las citas
-    private List<Integer> idsCitas = new ArrayList<>();
+    private final List<Integer> idsCitas = new ArrayList<>();
 
     // Colores
     private static final Color COLOR_SIDEBAR = new Color(31, 41, 55);
@@ -73,7 +75,7 @@ public class MainFrame extends JFrame {
     }
 
     private void configurarVentana() {
-        setTitle("Sistema de Gestion - AutoFix Pro");
+        setTitle("Sistema de Gestión - AutoFix Pro");
         setSize(1400, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -92,7 +94,7 @@ public class MainFrame extends JFrame {
         topBar.setBackground(COLOR_SIDEBAR);
         topBar.setBorder(new EmptyBorder(12, 20, 12, 20));
 
-        JLabel titleLabel = new JLabel("Sistema de Gestion - AutoFix Pro");
+        JLabel titleLabel = new JLabel("Sistema de Gestión - AutoFix Pro");
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 15));
 
@@ -109,7 +111,7 @@ public class MainFrame extends JFrame {
         sidebar.add(crearPanelUsuario());
         sidebar.add(Box.createRigidArea(new Dimension(0, 25)));
 
-        // Crear botones de navegacion
+        // Crear botones de navegación
         btnDashboard = crearBotonNav("Dashboard");
         btnCitas = crearBotonNav("Citas");
         btnClientes = crearBotonNav("Clientes");
@@ -117,7 +119,7 @@ public class MainFrame extends JFrame {
         btnReportes = crearBotonNav("Reportes");
         btnUsuarios = crearBotonNav("Usuarios");
 
-        // Acciones de navegacion
+        // Acciones de navegación
         btnDashboard.addActionListener(e -> mostrarPanel("dashboard"));
         btnCitas.addActionListener(e -> mostrarPanel("citas"));
         btnClientes.addActionListener(e -> mostrarPanel("clientes"));
@@ -125,12 +127,12 @@ public class MainFrame extends JFrame {
         btnReportes.addActionListener(e -> mostrarPanel("reportes"));
         btnUsuarios.addActionListener(e -> mostrarPanel("usuarios"));
 
-        // Solo mostrar Dashboard si es administrador
+        // Solo muestra Dashboard si es administrador
         if ("administrador".equals(usuarioActual.getRol())) {
             sidebar.add(btnDashboard);
             sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         }
-        // Solo mostrar Citas si es trabajador (admin usa Dashboard)
+        // Solo muestra Citas si es trabajador (admin usa Dashboard)
         if (!"administrador".equals(usuarioActual.getRol())) {
             sidebar.add(btnCitas);
             sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -139,21 +141,28 @@ public class MainFrame extends JFrame {
         sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         sidebar.add(btnServicios);
         sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        // Solo mostrar Reportes si es administrador
+        // Solo muestra Reportes si es administrador
         if ("administrador".equals(usuarioActual.getRol())) {
             sidebar.add(btnReportes);
             sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         }
-        // Solo mostrar Usuarios si es administrador
+        // Solo muestra Usuarios si es administrador
         if ("administrador".equals(usuarioActual.getRol())) {
             sidebar.add(btnUsuarios);
+            sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
+        }
+        // Botón Cerrar Período - Solo administrador
+        if ("administrador".equals(usuarioActual.getRol())) {
+            JButton btnCerrarPeriodo = crearBotonNav("Cerrar Periodo");
+            btnCerrarPeriodo.addActionListener(e -> abrirCerrarPeriodo());
+            sidebar.add(btnCerrarPeriodo);
             sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         }
 
         sidebar.add(Box.createVerticalGlue());
 
         // Boton cerrar sesion
-        JButton btnLogout = new JButton("Cerrar Sesion");
+        JButton btnLogout = new JButton("Cerrar Sesión");
         btnLogout.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnLogout.setMaximumSize(new Dimension(230, 40));
         btnLogout.setBackground(new Color(220, 38, 38));
@@ -167,7 +176,7 @@ public class MainFrame extends JFrame {
         sidebar.add(btnLogout);
         sidebar.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Activar panel por defecto según rol
+        // Activa el panel por defecto según rol
         if ("administrador".equals(usuarioActual.getRol())) {
             botonActivo = btnDashboard;
             actualizarBotonActivo(btnDashboard);
@@ -206,7 +215,7 @@ public class MainFrame extends JFrame {
         avatar.setPreferredSize(new Dimension(55, 55));
         avatar.setOpaque(false);
 
-        // Info usuario
+        // Información usuario
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(COLOR_SIDEBAR);
@@ -264,13 +273,13 @@ public class MainFrame extends JFrame {
         panelContenido = new JPanel(new BorderLayout());
         panelContenido.setBackground(COLOR_BG);
 
-        // Crear y guardar el dashboard
+        // Crea y guarda el dashboard
         dashboardPanel = new JPanel(new BorderLayout());
         dashboardPanel.setBackground(COLOR_BG);
         dashboardPanel.add(crearToolbar(), BorderLayout.NORTH);
         dashboardPanel.add(crearPanelCentral(), BorderLayout.CENTER);
 
-        // Si es admin, mostrar dashboard. Si no, mostrar citas
+        // Si es administrador, muestra el dashboard. Si no, muestra citas
         if ("administrador".equals(usuarioActual.getRol())) {
             panelContenido.add(dashboardPanel, BorderLayout.CENTER);
         } else {
@@ -319,7 +328,7 @@ public class MainFrame extends JFrame {
         mainPanel.setBackground(COLOR_BG);
         mainPanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Tarjetas de estadisticas
+        // Tarjetas de estadísticas
         mainPanel.add(crearPanelEstadisticas(), BorderLayout.NORTH);
 
         // Tabla de citas
@@ -333,7 +342,7 @@ public class MainFrame extends JFrame {
         JPanel statsPanel = new JPanel(new GridLayout(1, numTarjetas, 18, 0));
         statsPanel.setBackground(COLOR_BG);
 
-        // Crear tarjetas (los valores se actualizan en cargarDatos)
+        // Crea tarjetas (los valores se actualizan en cargarDatos)
         lblPendientes = new JLabel("0");
         lblCompletadas = new JLabel("0");
         lblIngresos = new JLabel("0.00 €");
@@ -439,7 +448,7 @@ public class MainFrame extends JFrame {
 
         tablaCitas.setComponentPopupMenu(menuContextual);
 
-        // Seleccionar fila al hacer clic derecho y doble clic para ver detalles
+        // Selecciona fila al hacer clic derecho y doble clic para ver detalles
         tablaCitas.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mousePressed(java.awt.event.MouseEvent e) {
@@ -474,7 +483,7 @@ public class MainFrame extends JFrame {
         tablaCitas.getTableHeader().setForeground(COLOR_TEXT_GRAY);
         tablaCitas.getTableHeader().setPreferredSize(new Dimension(0, 45));
 
-        // Centrar contenido
+        // Centra el contenido
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         for (int i = 0; i < tablaCitas.getColumnCount(); i++) {
@@ -549,7 +558,7 @@ public class MainFrame extends JFrame {
         return statusBar;
     }
 
-    // ========== METODOS DE DATOS ==========
+    // ========== MÉTODOS DE DATOS ==========
 
     private void cargarDatos() {
         cargarEstadisticas();
@@ -621,7 +630,7 @@ public class MainFrame extends JFrame {
         NuevaCitaDialog dialog = new NuevaCitaDialog(this, usuarioActual);
         dialog.setVisible(true);
 
-        // Si se guardó, recargar datos
+        // Si se guardó, recarga datos
         if (dialog.isGuardado()) {
             cargarDatos();
         }
@@ -686,7 +695,7 @@ public class MainFrame extends JFrame {
         if (citaController.cambiarEstado(idCita, nuevoEstado)) {
             cargarDatos();
 
-            // Si se completa la cita, preguntar si generar factura
+            // Si se completa la cita, pregunta si genera la factura
             if ("completada".equals(nuevoEstado)) {
                 int respuesta = JOptionPane.showConfirmDialog(
                         this,
@@ -714,7 +723,7 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // Obtener cliente
+        // Obtiene cliente
         Cliente cliente = clienteController.obtenerPorId(cita.getIdCliente());
 
         if (cliente == null) {
@@ -722,11 +731,11 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // Obtener nombre del empleado
+        // Obtiene nombre del empleado
         Usuario empleado = usuarioController.obtenerPorId(cita.getIdUsuario());
         String nombreEmpleado = empleado != null ? empleado.getNombre() : "No asignado";
 
-        // Generar factura
+        // Genera factura
         String rutaFactura = GeneradorFactura.generarFactura(cita, cliente, nombreEmpleado);
 
         if (rutaFactura != null) {
@@ -751,13 +760,13 @@ public class MainFrame extends JFrame {
     }
 
     private void actualizarBotonActivo(JButton nuevoBoton) {
-        // Desactivar el anterior
+        // Desactiva el anterior
         if (botonActivo != null) {
             botonActivo.setBackground(COLOR_SIDEBAR);
             botonActivo.setForeground(new Color(209, 213, 219));
         }
 
-        // Activar el nuevo
+        // Activa el nuevo
         botonActivo = nuevoBoton;
         botonActivo.setBackground(COLOR_ACTIVE);
         botonActivo.setForeground(Color.WHITE);
@@ -831,23 +840,73 @@ public class MainFrame extends JFrame {
     }
 
     private void cancelarCitaSeleccionada() {
-        // Obtener cita seleccionada
-        int idCita = (int) tablaCitas.getValueAt(tablaCitas.getSelectedRow(), 0);
-        Cita cita = citaController.obtenerPorId(idCita);
+        int fila = tablaCitas.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione una cita para cancelar", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-        if (cita != null && citaController.puedeCancelar(cita)) {
-            CancelarCitaDialog dialog = new CancelarCitaDialog(
-                    this, idCita, cita.getNombreCliente(),
-                    cita.getModeloCoche(), usuarioActual.getNombre()
+        int idCita = idsCitas.get(fila);
+        String cliente = modeloTabla.getValueAt(fila, 0).toString();
+
+        // Pide el motivo de la cancelación
+        String motivo = JOptionPane.showInputDialog(this,
+                "Ingrese el motivo de la cancelación para la cita de: " + cliente,
+                "Motivo de Cancelación",
+                JOptionPane.QUESTION_MESSAGE);
+
+        // Si el usuario no canceló el diálogo y escribió algo
+        if (motivo != null && !motivo.trim().isEmpty()) {
+
+            // Llamamos al controlador con los datos que pide tu DAO
+            boolean exito = citaController.cancelarCita(idCita, motivo, usuarioActual.getNombre());
+
+            if (exito) {
+                JOptionPane.showMessageDialog(this, "Cita cancelada correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                cargarDatos(); // Refresca la tabla y las estadísticas
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo cancelar la cita en la base de datos", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else if (motivo != null) {
+            JOptionPane.showMessageDialog(this, "Debe indicar un motivo para cancelar", "Aviso", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void abrirCerrarPeriodo() {
+        int totalCitas = citaController.obtenerTodas().size();
+        int totalClientes = clienteController.obtenerTodos().size();
+        double ingresos = citaController.calcularIngresos();
+
+        if (totalCitas == 0 && totalClientes == 0) {
+            JOptionPane.showMessageDialog(this,
+                    "No hay datos operativos que archivar.",
+                    "Sin datos", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        CerrarPeriodoDialog dialog = new CerrarPeriodoDialog(
+                this, totalCitas, totalClientes, ingresos);
+        dialog.setVisible(true);
+
+        if (dialog.isConfirmado()) {
+            HistoricoDAO historicoDAO = new HistoricoDAO();
+            boolean exito = historicoDAO.cerrarPeriodo(
+                    dialog.getNombre(),
+                    dialog.getDescripcion(),
+                    usuarioActual.getNombre()
             );
-            dialog.setVisible(true);
 
-            if (dialog.isConfirmado()) {
-                if (citaController.cancelarCita(idCita, dialog.getMotivo(), dialog.getCanceladoPor())) {
-                    JOptionPane.showMessageDialog(this, "Cita cancelada correctamente");
-                    cargarCitas(); // Refrescar tabla
-                }
+            if (exito) {
+                JOptionPane.showMessageDialog(this,
+                        "Periodo cerrado correctamente.\nConsulta en Reportes > Historico.",
+                        "Exito", JOptionPane.INFORMATION_MESSAGE);
+                cargarDatos();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Error al cerrar el periodo.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
+
 }

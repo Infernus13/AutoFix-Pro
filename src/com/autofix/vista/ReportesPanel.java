@@ -14,7 +14,7 @@ import java.util.List;
 
 public class ReportesPanel extends JPanel {
 
-    private CitaController citaController;
+    private final CitaController citaController;
 
     private final Color COLOR_PRIMARIO = new Color(37, 99, 235);
     private final Color COLOR_FONDO = new Color(249, 250, 251);
@@ -42,6 +42,8 @@ public class ReportesPanel extends JPanel {
     private JLabel lblTrabajosPendientes, lblIngresosTotales, lblTotalCitas, lblTotalCanceladas;
 
     private List<Cita> todasLasCitas;
+    private List<Integer> idsCitasTablaPrincipal = new ArrayList<>();
+    private List<Integer> idsCitasTablaCanceladas = new ArrayList<>();
     private Map<String, List<Cita>> citasPorFecha;
     private SimpleDateFormat formatoFecha = new SimpleDateFormat("dd/MM/yyyy");
     private SimpleDateFormat formatoFechaHora = new SimpleDateFormat("dd/MM/yyyy HH:mm");
@@ -244,6 +246,7 @@ public class ReportesPanel extends JPanel {
         tabs.setFont(new Font("Segoe UI", Font.BOLD, 12));
         tabs.addTab("📋 Citas", crearPanelTablaCitas());
         tabs.addTab("❌ Canceladas", crearPanelCanceladas());
+        tabs.addTab("📁 Historico", new HistoricoPanel());
         panel.add(tabs, BorderLayout.CENTER);
 
         return panel;
@@ -316,15 +319,42 @@ public class ReportesPanel extends JPanel {
         panel.setBackground(COLOR_BLANCO);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] cols = {"ID", "Cliente", "Vehículo", "Matrícula", "Servicios", "Empleado", "Fecha", "Estado", "Precio"};
+        String[] cols = {"Cliente", "Vehículo", "Matrícula", "Servicios", "Empleado", "Fecha", "Estado", "Precio"};
         modeloTablaCitas = new DefaultTableModel(cols, 0) {
+            @Override
             public boolean isCellEditable(int r, int c) { return false; }
         };
+
         tablaCitasPrincipal = new JTable(modeloTablaCitas);
         tablaCitasPrincipal.setRowHeight(32);
+
+        // Renderizador de colores para la columna Estado (Índice 6)
+        tablaCitasPrincipal.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                label.setHorizontalAlignment(JLabel.CENTER);
+                label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                if (value != null) {
+                    String estado = value.toString().toLowerCase();
+                    if (estado.contains("pendiente")) label.setForeground(COLOR_AMARILLO);
+                    else if (estado.contains("proceso")) label.setForeground(COLOR_AZUL);
+                    else if (estado.contains("completada")) label.setForeground(COLOR_VERDE);
+                    else if (estado.contains("cancelada")) label.setForeground(COLOR_ROJO);
+                }
+                if (isSelected) label.setBackground(new Color(219, 234, 254));
+                else label.setBackground(COLOR_BLANCO);
+                return label;
+            }
+        });
+
         tablaCitasPrincipal.getTableHeader().setBackground(COLOR_PRIMARIO);
         tablaCitasPrincipal.getTableHeader().setForeground(COLOR_BLANCO);
+
+        // Configuración del doble clic
         tablaCitasPrincipal.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) verDetallesCita();
             }
@@ -333,7 +363,6 @@ public class ReportesPanel extends JPanel {
         panel.add(new JScrollPane(tablaCitasPrincipal), BorderLayout.CENTER);
         return panel;
     }
-
     private JPanel crearPanelCanceladas() {
         JPanel panel = new JPanel(new BorderLayout(0, 10));
         panel.setBackground(COLOR_BLANCO);
@@ -349,7 +378,7 @@ public class ReportesPanel extends JPanel {
         lblInfo.setOpaque(true);
         panel.add(lblInfo, BorderLayout.NORTH);
 
-        String[] cols = {"ID", "Cliente", "Vehículo", "Fecha Cita", "Cancelado Por", "Fecha Cancel.", "Motivo"};
+        String[] cols = {"Cliente", "Vehículo", "Fecha Cita", "Cancelado Por", "Fecha Cancel.", "Motivo"};
         modeloTablaCanceladas = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -357,7 +386,7 @@ public class ReportesPanel extends JPanel {
         tablaCanceladas.setRowHeight(40);
         tablaCanceladas.getTableHeader().setBackground(COLOR_ROJO);
         tablaCanceladas.getTableHeader().setForeground(COLOR_BLANCO);
-        tablaCanceladas.getColumnModel().getColumn(6).setPreferredWidth(300);
+        tablaCanceladas.getColumnModel().getColumn(5).setPreferredWidth(300);
 
         tablaCanceladas.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
@@ -431,15 +460,20 @@ public class ReportesPanel extends JPanel {
 
     private void cargarCitasCanceladas() {
         modeloTablaCanceladas.setRowCount(0);
+        idsCitasTablaCanceladas.clear(); // Limpiamos la lista oculta
+
         for (Cita c : todasLasCitas) {
             if ("cancelada".equals(c.getEstado())) {
+                idsCitasTablaCanceladas.add(c.getId()); // Guardamos el ID en la lista oculta
+
                 String fechaCita = c.getFecha() != null ? formatoFecha.format(c.getFecha()) : "-";
                 String fechaCancel = c.getFechaCancelacion() != null ? formatoFechaHora.format(c.getFechaCancelacion()) : "-";
                 String motivo = c.getMotivoCancelacion() != null ? c.getMotivoCancelacion() : "-";
                 String canceladoPor = c.getCanceladoPor() != null ? c.getCanceladoPor() : "-";
 
+                // No incluimos el ID en el addRow
                 modeloTablaCanceladas.addRow(new Object[]{
-                        c.getId(), c.getNombreCliente(), c.getModeloCoche(),
+                        c.getNombreCliente(), c.getModeloCoche(),
                         fechaCita, canceladoPor, fechaCancel, motivo
                 });
             }
@@ -471,12 +505,21 @@ public class ReportesPanel extends JPanel {
         if (citas == null) return;
 
         modeloTablaCitas.setRowCount(0);
+        idsCitasTablaPrincipal.clear(); // <-- MUY IMPORTANTE: Limpia la lista antes de empezar
+
         double ing = 0;
         for (Cita c : citas) {
+            idsCitasTablaPrincipal.add(c.getId()); // <-- AÑADE ESTA LÍNEA: Guarda el ID en memoria
+
             modeloTablaCitas.addRow(new Object[]{
-                    c.getId(), c.getNombreCliente(), c.getModeloCoche(), c.getMatricula(),
-                    c.getNombreServicio(), c.getNombreUsuario(), formatoFecha.format(c.getFecha()),
-                    c.getEstado(), String.format("%.2f €", c.getPrecioFinal())
+                    c.getNombreCliente(),
+                    c.getModeloCoche(),
+                    c.getMatricula(),
+                    c.getNombreServicio(),
+                    c.getNombreUsuario(),
+                    formatoFecha.format(c.getFecha()),
+                    c.getEstado(),
+                    String.format("%.2f €", c.getPrecioFinal())
             });
             ing += c.getPrecioFinal();
         }
@@ -495,10 +538,13 @@ public class ReportesPanel extends JPanel {
         }
 
         modeloTablaCitas.setRowCount(0);
+        idsCitasTablaPrincipal.clear(); // Limpiamos la lista al filtrar
+
         for (Cita c : todasLasCitas) {
             if (estado == null || estado.equals(c.getEstado())) {
+                idsCitasTablaPrincipal.add(c.getId()); // ¡Importante! Guardar ID
                 modeloTablaCitas.addRow(new Object[]{
-                        c.getId(), c.getNombreCliente(), c.getModeloCoche(), c.getMatricula(),
+                        c.getNombreCliente(), c.getModeloCoche(), c.getMatricula(),
                         c.getNombreServicio(), c.getNombreUsuario(),
                         c.getFecha() != null ? formatoFecha.format(c.getFecha()) : "-",
                         c.getEstado(), String.format("%.2f €", c.getPrecioFinal())
@@ -510,44 +556,63 @@ public class ReportesPanel extends JPanel {
     private void verDetallesCita() {
         int fila = tablaCitasPrincipal.getSelectedRow();
         if (fila < 0) return;
-        int id = (int) modeloTablaCitas.getValueAt(fila, 0);
+
+        // IMPORTANTE: Obtenemos el ID de la lista oculta usando el índice de la fila seleccionada
+        int id = idsCitasTablaPrincipal.get(fila);
+
+        // Buscamos la cita en nuestra lista completa de objetos
         Cita c = todasLasCitas.stream().filter(x -> x.getId() == id).findFirst().orElse(null);
+
         if (c != null) {
-            JOptionPane.showMessageDialog(this,
-                    String.format("ID: %d\nCliente: %s\nVehículo: %s (%s)\nServicios: %s\nEmpleado: %s\nEstado: %s\nPrecio: %.2f €",
-                            c.getId(), c.getNombreCliente(), c.getModeloCoche(), c.getMatricula(),
-                            c.getNombreServicio(), c.getNombreUsuario(), c.getEstado(), c.getPrecioFinal()),
-                    "Detalles Cita #" + id, JOptionPane.INFORMATION_MESSAGE);
+            String mensaje = String.format(
+                    "📝 DETALLES DE LA CITA\n" +
+                            "━━━━━━━━━━━━━━━━━━━━━\n" +
+                            "🆔 ID: %d\n" +
+                            "👤 Cliente: %s\n" +
+                            "🚗 Vehículo: %s\n" +
+                            "🔢 Matrícula: %s\n" +
+                            "🛠️ Servicio: %s\n" +
+                            "👨‍🔧 Empleado: %s\n" +
+                            "📅 Fecha: %s\n" +
+                            "📊 Estado: %s\n" +
+                            "💰 Precio: %.2f €",
+                    c.getId(), c.getNombreCliente(), c.getModeloCoche(), c.getMatricula(),
+                    c.getNombreServicio(), c.getNombreUsuario(),
+                    formatoFecha.format(c.getFecha()), c.getEstado(), c.getPrecioFinal()
+            );
+
+            JOptionPane.showMessageDialog(this, mensaje, "Información de Cita #" + id, JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void verDetalleCancelacion() {
         int fila = tablaCanceladas.getSelectedRow();
-        if (fila < 0) return;
+        if (fila < 0 || fila >= idsCitasTablaCanceladas.size()) return;
 
-        int id = (int) modeloTablaCanceladas.getValueAt(fila, 0);
-        String cliente = (String) modeloTablaCanceladas.getValueAt(fila, 1);
-        String vehiculo = (String) modeloTablaCanceladas.getValueAt(fila, 2);
-        String fechaCita = (String) modeloTablaCanceladas.getValueAt(fila, 3);
-        String canceladoPor = (String) modeloTablaCanceladas.getValueAt(fila, 4);
-        String fechaCancel = (String) modeloTablaCanceladas.getValueAt(fila, 5);
-        String motivo = (String) modeloTablaCanceladas.getValueAt(fila, 6);
+        // Obtenemos el ID de la lista interna
+        int id = idsCitasTablaCanceladas.get(fila);
 
-        String mensaje = String.format(
-                "═══════════════════════════════════\n" +
-                        "      DETALLE DE CANCELACIÓN #%d\n" +
-                        "═══════════════════════════════════\n\n" +
-                        "👤 Cliente: %s\n" +
-                        "🚗 Vehículo: %s\n" +
-                        "📅 Fecha de la cita: %s\n\n" +
-                        "❌ INFORMACIÓN DE CANCELACIÓN:\n" +
-                        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                        "👷 Cancelado por: %s\n" +
-                        "🕐 Fecha/Hora: %s\n\n" +
-                        "📝 Motivo:\n%s",
-                id, cliente, vehiculo, fechaCita, canceladoPor, fechaCancel, motivo
-        );
+        // Buscamos el objeto cita original para tener todos los datos
+        Cita c = todasLasCitas.stream().filter(x -> x.getId() == id).findFirst().orElse(null);
 
-        JOptionPane.showMessageDialog(this, mensaje, "Detalle de Cancelación", JOptionPane.WARNING_MESSAGE);
+        if (c != null) {
+            String mensaje = String.format(
+                    "═══════════════════════════════════\n" +
+                            "      DETALLE DE CANCELACIÓN #%d\n" +
+                            "═══════════════════════════════════\n\n" +
+                            "👤 Cliente: %s\n" +
+                            "🚗 Vehículo: %s\n" +
+                            "📅 Fecha de la cita: %s\n\n" +
+                            "❌ INFORMACIÓN DE CANCELACIÓN:\n" +
+                            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                            "👷 Cancelado por: %s\n" +
+                            "🕐 Fecha/Hora: %s\n\n" +
+                            "📝 Motivo:\n%s",
+                    c.getId(), c.getNombreCliente(), c.getModeloCoche(),
+                    formatoFecha.format(c.getFecha()), c.getCanceladoPor(),
+                    formatoFechaHora.format(c.getFechaCancelacion()), c.getMotivoCancelacion()
+            );
+            JOptionPane.showMessageDialog(this, mensaje, "Detalle de Cancelación", JOptionPane.WARNING_MESSAGE);
+        }
     }
 }

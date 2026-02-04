@@ -11,5 +11,6 @@
     <orderEntry type="library" name="itextpdf" level="project" />
     <orderEntry type="library" name="mysql.connector.java" level="project" />
     <orderEntry type="library" name="junit" level="project" />
+    <orderEntry type="library" name="itextpdf-5.5.13.3" level="project" />
   </component>
 </module>

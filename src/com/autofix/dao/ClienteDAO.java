@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ClienteDAO {
 
-    // Obtener todos los clientes
+    // Obtiene todos los clientes
     public List<Cliente> obtenerTodos() {
         List<Cliente> clientes = new ArrayList<>();
         String sql = "SELECT * FROM clientes ORDER BY nombre";
@@ -34,7 +34,7 @@ public class ClienteDAO {
         return clientes;
     }
 
-    // Obtener cliente por ID
+    // Obtiene cliente por ID
     public Cliente obtenerPorId(int id) {
         String sql = "SELECT * FROM clientes WHERE id = ?";
 
@@ -60,7 +60,7 @@ public class ClienteDAO {
         return null;
     }
 
-    // Buscar clientes por nombre
+    // Busca clientes por nombre
     public List<Cliente> buscarPorNombre(String nombre) {
         List<Cliente> clientes = new ArrayList<>();
         String sql = "SELECT * FROM clientes WHERE nombre LIKE ? ORDER BY nombre";
@@ -87,7 +87,7 @@ public class ClienteDAO {
         return clientes;
     }
 
-    // Contar total de clientes
+    // Cuenta el total de clientes
     public int contarTotal() {
         String sql = "SELECT COUNT(*) FROM clientes";
 
@@ -104,9 +104,8 @@ public class ClienteDAO {
         return 0;
     }
 
-    // Insertar nuevo cliente
-    // En ClienteDAO.java
-    // Método insertar CORREGIDO en ClienteDAO.java
+    // Inserta nuevo cliente
+
     public boolean insertar(Cliente cliente) {
         String sql = "INSERT INTO clientes (nombre, email, telefono, direccion) VALUES (?, ?, ?, ?)";
 
@@ -139,7 +138,7 @@ public class ClienteDAO {
         }
     }
 
-    // Actualizar cliente
+    // Actualiza cliente
     public boolean actualizar(Cliente cliente) {
         String sql = "UPDATE clientes SET nombre = ?, telefono = ?, email = ?, direccion = ? WHERE id = ?";
 
@@ -159,7 +158,7 @@ public class ClienteDAO {
         return false;
     }
 
-    // Eliminar cliente
+    // Elimina cliente
     public boolean eliminar(int id) {
         String sql = "DELETE FROM clientes WHERE id = ?";
 
