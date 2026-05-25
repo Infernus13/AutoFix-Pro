@@ -300,23 +300,17 @@ public class CitaDAO {
         cita.setModeloCoche(rs.getString("modelo_coche"));
         cita.setFecha(rs.getDate("fecha"));
         cita.setHora(rs.getTime("hora"));
-        cita.setEstado(rs.getString("estado"));
+        cita.setEstado(rs.getString("estado").toLowerCase().trim());
         cita.setPrecioFinal(rs.getDouble("precio_final"));
         cita.setNotas(rs.getString("notas"));
-        cita.setFechaCreacion(rs.getTimestamp("fecha_creacion"));
         cita.setNombreCliente(rs.getString("nombre_cliente"));
         cita.setNombreUsuario(rs.getString("nombre_usuario"));
         cita.setNombreServicio(rs.getString("nombre_servicio"));
-        cita.setArchivada(rs.getBoolean("archivada"));
+        cita.setMotivoCancelacion(rs.getString("motivo_cancelacion"));
+        cita.setCanceladoPor(rs.getString("cancelado_por"));
+        cita.setFechaCancelacion(rs.getTimestamp("fecha_cancelacion"));
 
-        // Campos de cancelación (pueden ser null)
-        try {
-            cita.setMotivoCancelacion(rs.getString("motivo_cancelacion"));
-            cita.setCanceladoPor(rs.getString("cancelado_por"));
-            cita.setFechaCancelacion(rs.getTimestamp("fecha_cancelacion"));
-        } catch (SQLException e) {
-            // Los campos pueden no existir en consultas anteriores
-        }
+        try { cita.setArchivada(rs.getBoolean("archivada")); } catch (Exception e) {}
 
         return cita;
     }
@@ -408,8 +402,8 @@ public class CitaDAO {
 
     public List<java.sql.Date> obtenerFechasConCitasCompletadas() {
         List<java.sql.Date> fechas = new ArrayList<>();
+
         String sql = "SELECT DISTINCT fecha FROM citas " +
-                "WHERE estado = 'completada' " +
                 "ORDER BY fecha DESC";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -420,7 +414,7 @@ public class CitaDAO {
                 fechas.add(rs.getDate("fecha"));
             }
         } catch (SQLException e) {
-            System.out.println("Error al obtener fechas: " + e.getMessage());
+            System.out.println("Error al obtener todas las fechas: " + e.getMessage());
         }
         return fechas;
     }
@@ -481,4 +475,33 @@ public class CitaDAO {
         }
         return estadisticas;
     }
+
+    // 1. Contar citas por estado y usuario (Para el dashboard del trabajador)
+    public int contarPorEstadoYUsuario(String estado, int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM citas WHERE estado = ? AND id_usuario = ? AND archivada = 0";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, estado);
+            stmt.setInt(2, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            System.out.println("Error en contarPorEstadoYUsuario: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    // 2. Contar citas en proceso totales (Para el dashboard del admin)
+    public int contarEnProcesoTotal() {
+        String sql = "SELECT COUNT(*) FROM citas WHERE estado = 'en_proceso' AND archivada = 0";
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            System.out.println("Error en contarEnProcesoTotal: " + e.getMessage());
+        }
+        return 0;
+    }
+
 }

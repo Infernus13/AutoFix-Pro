@@ -30,6 +30,7 @@ public class MainFrame extends JFrame {
 
     // Componentes que necesitamos actualizar
     private JLabel lblPendientes;
+    private JLabel lblEnProceso;
     private JLabel lblCompletadas;
     private JLabel lblIngresos;
     private JTable tablaCitas;
@@ -141,16 +142,17 @@ public class MainFrame extends JFrame {
         sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         sidebar.add(btnServicios);
         sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        // Solo muestra Reportes si es administrador
-        if ("administrador".equals(usuarioActual.getRol())) {
-            sidebar.add(btnReportes);
-            sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        }
         // Solo muestra Usuarios si es administrador
         if ("administrador".equals(usuarioActual.getRol())) {
             sidebar.add(btnUsuarios);
             sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         }
+        // Solo muestra Reportes si es administrador
+        if ("administrador".equals(usuarioActual.getRol())) {
+            sidebar.add(btnReportes);
+            sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
+        }
+
         // Botón Cerrar Período - Solo administrador
         if ("administrador".equals(usuarioActual.getRol())) {
             JButton btnCerrarPeriodo = crearBotonNav("Cerrar Periodo");
@@ -338,20 +340,25 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel crearPanelEstadisticas() {
-        int numTarjetas = "administrador".equals(usuarioActual.getRol()) ? 3 : 2;
+        // Definimos el número de tarjetas según el rol
+        int numTarjetas = "administrador".equals(usuarioActual.getRol()) ? 4 : 3;
         JPanel statsPanel = new JPanel(new GridLayout(1, numTarjetas, 18, 0));
         statsPanel.setBackground(COLOR_BG);
 
-        // Crea tarjetas (los valores se actualizan en cargarDatos)
+        // Inicializamos las etiquetas
         lblPendientes = new JLabel("0");
+        lblEnProceso = new JLabel("0");
         lblCompletadas = new JLabel("0");
         lblIngresos = new JLabel("0.00 €");
 
-        statsPanel.add(crearTarjeta("Pendientes", lblPendientes, new Color(234, 179, 8)));
-        statsPanel.add(crearTarjeta("Completadas", lblCompletadas, new Color(34, 197, 94)));
+        // Añadimos las tarjetas comunes con sus colores específicos
+        statsPanel.add(crearTarjeta("Pendientes", lblPendientes, new Color(234, 179, 8))); // Amarillo
+        statsPanel.add(crearTarjeta("En Proceso", lblEnProceso, new Color(59, 130, 246))); // Azul
+        statsPanel.add(crearTarjeta("Completadas", lblCompletadas, new Color(34, 197, 94))); // Verde
+
         // Solo mostrar ingresos a administradores
         if ("administrador".equals(usuarioActual.getRol())) {
-            statsPanel.add(crearTarjeta("Ingresos", lblIngresos, new Color(168, 85, 247)));
+            statsPanel.add(crearTarjeta("Ingresos", lblIngresos, new Color(168, 85, 247))); // Púrpura
         }
 
         return statsPanel;
@@ -534,25 +541,33 @@ public class MainFrame extends JFrame {
         statusBar.setBackground(COLOR_SIDEBAR);
         statusBar.setBorder(new EmptyBorder(10, 20, 10, 20));
 
+        // --- PANEL IZQUIERDO: Icono + Texto ---
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftPanel.setOpaque(false);
+
+        // El botoncito verde (indicador)
+        JLabel dotStatus = new JLabel("●");
+        dotStatus.setForeground(new Color(34, 197, 94)); // Color verde
+        dotStatus.setFont(new Font("Arial", Font.BOLD, 14));
+
         JLabel leftLabel = new JLabel("Sistema conectado a base de datos MySQL");
         leftLabel.setForeground(new Color(156, 163, 175));
         leftLabel.setFont(new Font("Arial", Font.PLAIN, 12));
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 25, 0));
+        leftPanel.add(dotStatus);
+        leftPanel.add(leftLabel);
+
+        // --- PANEL DERECHO: Usuario ---
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         rightPanel.setBackground(COLOR_SIDEBAR);
 
         JLabel userLabel = new JLabel("Usuario: " + usuarioActual.getEmail());
         userLabel.setForeground(new Color(156, 163, 175));
         userLabel.setFont(new Font("Arial", Font.PLAIN, 12));
 
-        JLabel statusLabel = new JLabel("● Online");
-        statusLabel.setForeground(new Color(34, 197, 94));
-        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
-
         rightPanel.add(userLabel);
-        rightPanel.add(statusLabel);
 
-        statusBar.add(leftLabel, BorderLayout.WEST);
+        statusBar.add(leftPanel, BorderLayout.WEST);
         statusBar.add(rightPanel, BorderLayout.EAST);
 
         return statusBar;
@@ -566,9 +581,19 @@ public class MainFrame extends JFrame {
     }
 
     private void cargarEstadisticas() {
-        lblPendientes.setText(String.valueOf(citaController.contarPendientes()));
-        lblCompletadas.setText(String.valueOf(citaController.contarCompletadas()));
-        lblIngresos.setText(String.format("%.2f €", citaController.calcularIngresos()));
+        if ("administrador".equals(usuarioActual.getRol())) {
+            // El ADMIN ve los totales globales
+            lblPendientes.setText(String.valueOf(citaController.contarPendientes()));
+            lblCompletadas.setText(String.valueOf(citaController.contarCompletadas()));
+            lblEnProceso.setText(String.valueOf(citaController.contarEnProcesoTotal())); // Debes crear este método en el Controller
+            lblIngresos.setText(String.format("%.2f €", citaController.calcularIngresos()));
+        } else {
+            // El trabjador  ve solo sus trabajos
+            int id = usuarioActual.getId();
+            lblPendientes.setText(String.valueOf(citaController.contarPorEstadoYUsuario("pendiente", id)));
+            lblEnProceso.setText(String.valueOf(citaController.contarPorEstadoYUsuario("en_proceso", id)));
+            lblCompletadas.setText(String.valueOf(citaController.contarPorEstadoYUsuario("completada", id)));
+        }
     }
 
     private void cargarTablaCitas() {
@@ -807,16 +832,23 @@ public class MainFrame extends JFrame {
                 if (reportesPanel == null) {
                     reportesPanel = new ReportesPanel();
                 }
+                panelContenido.removeAll();
                 reportesPanel.cargarReporte();
                 panelContenido.add(reportesPanel, BorderLayout.CENTER);
+                panelContenido.revalidate();
+                panelContenido.repaint();
                 break;
+
             case "usuarios":
                 actualizarBotonActivo(btnUsuarios);
                 if (usuariosPanel == null) {
                     usuariosPanel = new UsuariosPanel();
                 }
+                panelContenido.removeAll(); // Agrega esto para limpiar antes de mostrar usuarios
                 usuariosPanel.cargarDatos();
                 panelContenido.add(usuariosPanel, BorderLayout.CENTER);
+                panelContenido.revalidate();
+                panelContenido.repaint();
                 break;
         }
 

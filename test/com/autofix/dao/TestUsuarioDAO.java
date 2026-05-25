@@ -44,7 +44,7 @@ public class TestUsuarioDAO {
 
     @Test
     public void test3_LoginCorrecto() {
-        Usuario usuario = usuarioDAO.login("admin@autofix.com", "admin");
+        Usuario usuario = usuarioDAO.login("admin@autofix.com", "1234");
         assertNotNull("Debe validar credenciales correctas", usuario);
         System.out.println("✓ Login correcto: " + usuario.getNombre());
     }

@@ -41,7 +41,7 @@ public class VerCitaDialog extends JDialog {
     private void crearComponentes() {
         setLayout(new BorderLayout());
 
-        // Obtener datos
+        // --- CARGA DE DATOS ---
         CitaDAO citaDAO = new CitaDAO();
         ClienteDAO clienteDAO = new ClienteDAO();
         UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -58,76 +58,101 @@ public class VerCitaDialog extends JDialog {
         Usuario empleado = usuarioDAO.obtenerPorId(cita.getIdUsuario());
         List<DetalleCita> servicios = detalleCitaDAO.obtenerPorCita(idCita);
 
-        // Panel titulo
-        JPanel panelTitulo = new JPanel();
+        // --- PANEL TÍTULO ---
+        JPanel panelTitulo = new JPanel(new BorderLayout());
         panelTitulo.setBackground(COLOR_PRIMARIO);
-        panelTitulo.setBorder(new EmptyBorder(20, 25, 20, 25));
-        panelTitulo.setLayout(new BorderLayout());
+        panelTitulo.setBorder(new EmptyBorder(15, 25, 15, 25));
 
         JLabel lblTitulo = new JLabel("Cita #" + String.format("%03d", idCita));
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 20));
         lblTitulo.setForeground(Color.WHITE);
 
         JLabel lblEstado = new JLabel(cita.getEstado().toUpperCase());
-        lblEstado.setFont(new Font("Arial", Font.BOLD, 14));
+        lblEstado.setFont(new Font("Arial", Font.BOLD, 12));
         lblEstado.setForeground(getColorEstado(cita.getEstado()));
         lblEstado.setOpaque(true);
         lblEstado.setBackground(Color.WHITE);
-        lblEstado.setBorder(new EmptyBorder(5, 15, 5, 15));
+        lblEstado.setBorder(new EmptyBorder(4, 12, 4, 12));
 
         panelTitulo.add(lblTitulo, BorderLayout.WEST);
         panelTitulo.add(lblEstado, BorderLayout.EAST);
-
         add(panelTitulo, BorderLayout.NORTH);
 
-        // Panel contenido
+        // --- PANEL DE CONTENIO ---
         JPanel panelContenido = new JPanel();
         panelContenido.setLayout(new BoxLayout(panelContenido, BoxLayout.Y_AXIS));
         panelContenido.setBackground(COLOR_FONDO);
-        panelContenido.setBorder(new EmptyBorder(20, 25, 20, 25));
+        panelContenido.setBorder(new EmptyBorder(20, 30, 10, 30));
 
-        // Seccion Cliente
-        panelContenido.add(crearSeccion("CLIENTE"));
-        panelContenido.add(crearCampo("Nombre:", cliente != null ? cliente.getNombre() : "-"));
-        panelContenido.add(crearCampo("Telefono:", cliente != null ? cliente.getTelefono() : "-"));
-        panelContenido.add(Box.createRigidArea(new Dimension(0, 15)));
+        //Cliente y Vehículo (Dos Columnas)
+        JPanel panelGrid = new JPanel(new GridLayout(1, 2, 40, 0));
+        panelGrid.setOpaque(false);
+        panelGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
-        // Seccion Vehiculo
-        panelContenido.add(crearSeccion("VEHICULO"));
-        panelContenido.add(crearCampo("Matricula:", cita.getMatricula() != null ? cita.getMatricula() : "-"));
-        panelContenido.add(crearCampo("Modelo:", cita.getModeloCoche() != null ? cita.getModeloCoche() : "-"));
-        panelContenido.add(Box.createRigidArea(new Dimension(0, 15)));
+        // Columna Cliente
+        JPanel colCliente = new JPanel();
+        colCliente.setLayout(new BoxLayout(colCliente, BoxLayout.Y_AXIS));
+        colCliente.setOpaque(false);
+        colCliente.add(crearSeccion("CLIENTE"));
+        colCliente.add(crearCampo("Nombre:", cliente != null ? cliente.getNombre() : "-"));
+        colCliente.add(crearCampo("Teléfono:", cliente != null ? cliente.getTelefono() : "-"));
 
-        // Seccion Cita
+        // Columna Vehículo
+        JPanel colVehiculo = new JPanel();
+        colVehiculo.setLayout(new BoxLayout(colVehiculo, BoxLayout.Y_AXIS));
+        colVehiculo.setOpaque(false);
+        colVehiculo.add(crearSeccion("VEHÍCULO"));
+        colVehiculo.add(crearCampo("Matrícula:", cita.getMatricula() != null ? cita.getMatricula() : "-"));
+        colVehiculo.add(crearCampo("Modelo:", cita.getModeloCoche() != null ? cita.getModeloCoche() : "-"));
+
+        panelGrid.add(colCliente);
+        panelGrid.add(colVehiculo);
+        panelContenido.add(panelGrid);
+        panelContenido.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        //Detalles Cita
         panelContenido.add(crearSeccion("DETALLES DE LA CITA"));
-        panelContenido.add(crearCampo("Fecha:", cita.getFecha().toString()));
-        panelContenido.add(crearCampo("Hora:", cita.getHora().toString().substring(0, 5)));
-        panelContenido.add(crearCampo("Empleado:", empleado != null ? empleado.getNombre() : "-"));
-        panelContenido.add(Box.createRigidArea(new Dimension(0, 15)));
+        JPanel panelCitaHoriz = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panelCitaHoriz.setOpaque(false);
+        panelCitaHoriz.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelCitaHoriz.add(crearCampo("Fecha:", cita.getFecha().toString()));
+        panelCitaHoriz.add(Box.createRigidArea(new Dimension(30, 0)));
+        panelCitaHoriz.add(crearCampo("Hora:", cita.getHora().toString().substring(0, 5)));
+        panelCitaHoriz.add(Box.createRigidArea(new Dimension(30, 0)));
+        panelCitaHoriz.add(crearCampo("Empleado:", empleado != null ? empleado.getNombre() : "-"));
+        panelContenido.add(panelCitaHoriz);
+        panelContenido.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Seccion Servicios
+        // Servicios
         panelContenido.add(crearSeccion("SERVICIOS A REALIZAR"));
+        JPanel panelServicios = new JPanel();
+        panelServicios.setLayout(new BoxLayout(panelServicios, BoxLayout.Y_AXIS));
+        panelServicios.setBackground(Color.WHITE);
+        panelServicios.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelServicios.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(230, 230, 230)),
+                new EmptyBorder(10, 15, 10, 15)
+        ));
+
         if (servicios.isEmpty()) {
-            panelContenido.add(crearCampo("", "Sin servicios registrados"));
+            panelServicios.add(new JLabel("Sin servicios registrados"));
         } else {
             for (DetalleCita detalle : servicios) {
-                String servicio = "• " + detalle.getNombreServicio() + "  -  " +
-                        String.format("%.2f €", detalle.getPrecio());
-                panelContenido.add(crearCampoServicio(servicio));
+                panelServicios.add(crearCampoServicio("• " + detalle.getNombreServicio() + " (" + String.format("%.2f €", detalle.getPrecio()) + ")"));
             }
         }
-        panelContenido.add(Box.createRigidArea(new Dimension(0, 10)));
+        panelContenido.add(panelServicios);
 
-        // Total
-        JPanel panelTotal = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelTotal.setBackground(COLOR_FONDO);
-        panelTotal.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-
+        //Total
+        JPanel wrapTotal = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        wrapTotal.setOpaque(false);
+        wrapTotal.setAlignmentX(Component.LEFT_ALIGNMENT);
         JLabel lblTotal = new JLabel("TOTAL: " + String.format("%.2f €", cita.getPrecioFinal()));
         lblTotal.setFont(new Font("Arial", Font.BOLD, 18));
         lblTotal.setForeground(new Color(34, 197, 94));
-        panelTotal.add(lblTotal);
-        panelContenido.add(panelTotal);
+        wrapTotal.add(lblTotal);
+        panelContenido.add(wrapTotal);
         panelContenido.add(Box.createRigidArea(new Dimension(0, 10)));
 
         // Notas
@@ -137,25 +162,29 @@ public class VerCitaDialog extends JDialog {
             txtNotas.setEditable(false);
             txtNotas.setLineWrap(true);
             txtNotas.setWrapStyleWord(true);
-            txtNotas.setFont(new Font("Arial", Font.PLAIN, 13));
+            txtNotas.setFont(new Font("Arial", Font.ITALIC, 13));
             txtNotas.setBackground(new Color(243, 244, 246));
-            txtNotas.setBorder(new EmptyBorder(10, 10, 10, 10));
-            txtNotas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-            panelContenido.add(txtNotas);
+            txtNotas.setBorder(new EmptyBorder(8, 10, 8, 10));
+
+            JScrollPane scrollNotas = new JScrollPane(txtNotas);
+            scrollNotas.setPreferredSize(new Dimension(Integer.MAX_VALUE, 60));
+            scrollNotas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+            scrollNotas.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+            scrollNotas.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panelContenido.add(scrollNotas);
         }
 
-        JScrollPane scroll = new JScrollPane(panelContenido);
-        scroll.setBorder(null);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        add(scroll, BorderLayout.CENTER);
+        panelContenido.add(Box.createVerticalGlue());
 
-        // Boton cerrar
+        add(panelContenido, BorderLayout.CENTER);
+
+        //BOTÓN CERRAR
         JPanel panelBoton = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panelBoton.setBackground(COLOR_FONDO);
-        panelBoton.setBorder(new EmptyBorder(10, 25, 15, 25));
+        panelBoton.setBorder(new EmptyBorder(5, 25, 15, 25));
 
         JButton btnCerrar = new JButton("Cerrar");
-        btnCerrar.setPreferredSize(new Dimension(100, 40));
+        btnCerrar.setPreferredSize(new Dimension(100, 35));
         btnCerrar.setBackground(COLOR_PRIMARIO);
         btnCerrar.setForeground(Color.WHITE);
         btnCerrar.setFocusPainted(false);
@@ -180,21 +209,17 @@ public class VerCitaDialog extends JDialog {
     private JPanel crearCampo(String etiqueta, String valor) {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
         panel.setBackground(COLOR_FONDO);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        if (!etiqueta.isEmpty()) {
-            JLabel lblEtiqueta = new JLabel(etiqueta + " ");
-            lblEtiqueta.setFont(new Font("Arial", Font.BOLD, 13));
-            lblEtiqueta.setForeground(COLOR_GRIS);
-            panel.add(lblEtiqueta);
-        }
+        JLabel lblEtiqueta = new JLabel(etiqueta + " ");
+        lblEtiqueta.setFont(new Font("Arial", Font.BOLD, 13));
+        lblEtiqueta.setForeground(COLOR_GRIS);
 
         JLabel lblValor = new JLabel(valor);
         lblValor.setFont(new Font("Arial", Font.PLAIN, 13));
         lblValor.setForeground(COLOR_TEXTO);
-        panel.add(lblValor);
 
+        panel.add(lblEtiqueta);
+        panel.add(lblValor);
         return panel;
     }
 

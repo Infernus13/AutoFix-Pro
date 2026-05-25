@@ -339,7 +339,7 @@ public class ReportesPanel extends JPanel {
                 if (value != null) {
                     String estado = value.toString().toLowerCase();
                     if (estado.contains("pendiente")) label.setForeground(COLOR_AMARILLO);
-                    else if (estado.contains("proceso")) label.setForeground(COLOR_AZUL);
+                    else if (estado.contains("proceso") || estado.contains("en_proceso")) label.setForeground(COLOR_AZUL);
                     else if (estado.contains("completada")) label.setForeground(COLOR_VERDE);
                     else if (estado.contains("cancelada")) label.setForeground(COLOR_ROJO);
                 }
@@ -408,19 +408,22 @@ public class ReportesPanel extends JPanel {
         cargarCitasCanceladas();
         calcularEstadisticas();
 
+        if (cmbFiltroEstado != null) {
+            cmbFiltroEstado.setSelectedIndex(0);
+        }
         if (modeloListaFechas.size() > 0) {
             listaFechas.setSelectedIndex(0);
-        } else {
-            modeloTablaCitas.setRowCount(0);
-            lblTotalCompletadas.setText("0");
-            lblIngresosDelDia.setText("0.00 €");
+
+            cargarCitasDelDiaSeleccionado();
         }
     }
 
     private void organizarCitasPorFecha() {
         citasPorFecha.clear();
+        if (todasLasCitas == null) return;
+
         for (Cita c : todasLasCitas) {
-            if ("completada".equals(c.getEstado())) {
+            if (c.getFecha() != null) {
                 String f = formatoFecha.format(c.getFecha());
                 citasPorFecha.computeIfAbsent(f, k -> new ArrayList<>()).add(c);
             }
@@ -497,57 +500,74 @@ public class ReportesPanel extends JPanel {
     }
 
     private void cargarCitasDelDiaSeleccionado() {
+
+        aplicarFiltro();
+
         String sel = listaFechas.getSelectedValue();
-        if (sel == null) return;
-
-        String fecha = sel.split("\\|")[0];
-        List<Cita> citas = citasPorFecha.get(fecha);
-        if (citas == null) return;
-
-        modeloTablaCitas.setRowCount(0);
-        idsCitasTablaPrincipal.clear(); // <-- MUY IMPORTANTE: Limpia la lista antes de empezar
-
-        double ing = 0;
-        for (Cita c : citas) {
-            idsCitasTablaPrincipal.add(c.getId()); // <-- AÑADE ESTA LÍNEA: Guarda el ID en memoria
-
-            modeloTablaCitas.addRow(new Object[]{
-                    c.getNombreCliente(),
-                    c.getModeloCoche(),
-                    c.getMatricula(),
-                    c.getNombreServicio(),
-                    c.getNombreUsuario(),
-                    formatoFecha.format(c.getFecha()),
-                    c.getEstado(),
-                    String.format("%.2f €", c.getPrecioFinal())
-            });
-            ing += c.getPrecioFinal();
+        if (sel != null) {
+            String fecha = sel.split("\\|")[0].trim();
+            List<Cita> citas = citasPorFecha.get(fecha);
+            if (citas != null) {
+                double ing = 0;
+                int completadasDia = 0;
+                for (Cita c : citas) {
+                    if ("completada".equalsIgnoreCase(c.getEstado().replace("_", " ").trim())) {
+                        ing += c.getPrecioFinal();
+                        completadasDia++;
+                    }
+                }
+                lblTotalCompletadas.setText(String.valueOf(completadasDia));
+                lblIngresosDelDia.setText(String.format("%.2f €", ing));
+            }
         }
-        lblTotalCompletadas.setText(String.valueOf(citas.size()));
-        lblIngresosDelDia.setText(String.format("%.2f €", ing));
     }
 
     private void aplicarFiltro() {
-        int idx = cmbFiltroEstado.getSelectedIndex();
-        String estado = null;
-        switch (idx) {
-            case 1: estado = "completada"; break;
-            case 2: estado = "en_proceso"; break;
-            case 3: estado = "pendiente"; break;
-            case 4: estado = "cancelada"; break;
+        String sel = listaFechas.getSelectedValue();
+        // Si no hay fecha seleccionada, vaciamos la tabla y salimos
+        if (sel == null) {
+            modeloTablaCitas.setRowCount(0);
+            return;
         }
 
-        modeloTablaCitas.setRowCount(0);
-        idsCitasTablaPrincipal.clear(); // Limpiamos la lista al filtrar
+        String fechaSel = sel.split("\\|")[0].trim();
+        List<Cita> citasDelDia = citasPorFecha.get(fechaSel);
 
-        for (Cita c : todasLasCitas) {
-            if (estado == null || estado.equals(c.getEstado())) {
-                idsCitasTablaPrincipal.add(c.getId()); // ¡Importante! Guardar ID
+        modeloTablaCitas.setRowCount(0);
+        idsCitasTablaPrincipal.clear();
+
+        if (citasDelDia == null) return;
+
+
+        Object comboSel = cmbFiltroEstado.getSelectedItem();
+        String filtroTexto = (comboSel != null) ? comboSel.toString().toLowerCase() : "todas";
+
+        for (Cita c : citasDelDia) {
+
+            String estadoDB = (c.getEstado() != null) ? c.getEstado().toLowerCase().replace("_", " ").trim() : "";
+            boolean pasaFiltro = false;
+
+
+            if (filtroTexto.contains("todas")) {
+                pasaFiltro = true;
+            } else if (filtroTexto.contains("completada") && estadoDB.equals("completada")) {
+                pasaFiltro = true;
+            } else if (filtroTexto.contains("proceso") && estadoDB.contains("proceso")) {
+                pasaFiltro = true;
+            } else if (filtroTexto.contains("pendiente") && estadoDB.equals("pendiente")) {
+                pasaFiltro = true;
+            } else if (filtroTexto.contains("cancelada") && estadoDB.equals("cancelada")) {
+                pasaFiltro = true;
+            }
+
+            if (pasaFiltro) {
+                idsCitasTablaPrincipal.add(c.getId());
                 modeloTablaCitas.addRow(new Object[]{
                         c.getNombreCliente(), c.getModeloCoche(), c.getMatricula(),
                         c.getNombreServicio(), c.getNombreUsuario(),
                         c.getFecha() != null ? formatoFecha.format(c.getFecha()) : "-",
-                        c.getEstado(), String.format("%.2f €", c.getPrecioFinal())
+                        c.getEstado(), // Aquí se verá el texto original
+                        String.format("%.2f €", c.getPrecioFinal())
                 });
             }
         }

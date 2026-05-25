@@ -122,8 +122,19 @@ public class CitaController {
     }
 
     public List<java.sql.Date> obtenerFechasConCitasCompletadas() {
+        // Cambia el nombre para que coincida con tu CitaDAO
         return citaDAO.obtenerFechasConCitasCompletadas();
     }
+
+
+    public int contarPorEstadoYUsuario(String estado, int idUsuario) {
+        return citaDAO.contarPorEstadoYUsuario(estado, idUsuario);
+    }
+
+    public int contarEnProcesoTotal() {
+        return citaDAO.contarEnProcesoTotal();
+    }
+
 
     public double calcularIngresosPorFecha(java.sql.Date fecha) {
         return citaDAO.calcularIngresosPorFecha(fecha);

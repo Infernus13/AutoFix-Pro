@@ -48,7 +48,7 @@ public class ServiciosPanel extends JPanel {
                 new EmptyBorder(18, 25, 18, 25)
         ));
 
-        JLabel titulo = new JLabel("Gestion de Servicios");
+        JLabel titulo = new JLabel("Gestión de Servicios");
         titulo.setFont(new Font("Arial", Font.BOLD, 24));
         titulo.setForeground(COLOR_TEXTO);
 
@@ -82,7 +82,8 @@ public class ServiciosPanel extends JPanel {
         tableContainer.setBackground(Color.WHITE);
         tableContainer.setBorder(BorderFactory.createLineBorder(new Color(229, 231, 235), 1));
 
-        String[] columnas = {"Nombre", "Descripcion", "Precio", "Duracion"};
+        // Columnas actualizadas
+        String[] columnas = {"Nombre", "Descripción", "Precio", "Duración", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -102,16 +103,42 @@ public class ServiciosPanel extends JPanel {
         tablaServicios.getTableHeader().setForeground(COLOR_GRIS);
         tablaServicios.getTableHeader().setPreferredSize(new Dimension(0, 45));
 
-        // Centrar contenido
+        // Renderizador central para todas las columnas
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         for (int i = 0; i < tablaServicios.getColumnCount(); i++) {
             tablaServicios.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        // Menu contextual
-        JPopupMenu menuContextual = new JPopupMenu();
+        // Renderizador específico para la columna ESTADO (índice 4)
+        tablaServicios.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                label.setHorizontalAlignment(JLabel.CENTER);
 
+                if (value != null) {
+                    String texto = value.toString();
+                    if (texto.contains("Inactivo")) {
+                        label.setForeground(new Color(220, 38, 38)); // Rojo
+                        label.setFont(label.getFont().deriveFont(Font.BOLD));
+                    } else {
+                        label.setForeground(new Color(22, 163, 74)); // Verde
+                        label.setFont(label.getFont().deriveFont(Font.PLAIN));
+                    }
+                }
+
+                if (isSelected) {
+                    label.setBackground(new Color(219, 234, 254));
+                } else {
+                    label.setBackground(Color.WHITE);
+                }
+                return label;
+            }
+        });
+
+        // Menú contextual
+        JPopupMenu menuContextual = new JPopupMenu();
         JMenuItem itemEditar = new JMenuItem("Editar servicio");
         itemEditar.addActionListener(e -> editarServicioSeleccionado());
         menuContextual.add(itemEditar);
@@ -146,16 +173,21 @@ public class ServiciosPanel extends JPanel {
         modeloTabla.setRowCount(0);
         idsServicios.clear();
 
+        // IMPORTANTE: Cambiado a obtenerTodos() para ver activos e inactivos
         List<Servicio> servicios = servicioController.obtenerTodos();
-        for (Servicio s : servicios) {
-            idsServicios.add(s.getId());
-            Object[] fila = {
-                    s.getNombre(),
-                    s.getDescripcion() != null ? s.getDescripcion() : "",
-                    String.format("%.2f €", s.getPrecio()),
-                    s.getDuracionMin() + " min"
-            };
-            modeloTabla.addRow(fila);
+
+        if (servicios != null) {
+            for (Servicio s : servicios) {
+                idsServicios.add(s.getId());
+                Object[] fila = {
+                        s.getNombre(),
+                        s.getDescripcion() != null ? s.getDescripcion() : "",
+                        String.format("%.2f €", s.getPrecio()),
+                        s.getDuracionMin() + " min",
+                        s.isActivo() ? "✅ Activo" : "❌ Inactivo"
+                };
+                modeloTabla.addRow(fila);
+            }
         }
     }
 
@@ -193,23 +225,33 @@ public class ServiciosPanel extends JPanel {
             return;
         }
 
+        // Obtenemos el ID real desde nuestra lista de IDs
         int idServicio = idsServicios.get(fila);
         String nombre = modeloTabla.getValueAt(fila, 0).toString();
 
         int respuesta = JOptionPane.showConfirmDialog(
                 this,
-                "¿Eliminar el servicio '" + nombre + "'?",
-                "Confirmar",
+                "¿Está seguro de eliminar permanentemente el servicio '" + nombre + "'?\n" +
+                        "Esta acción no se puede deshacer.",
+                "Confirmar Eliminación",
                 JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
+                JOptionPane.ERROR_MESSAGE
         );
 
         if (respuesta == JOptionPane.YES_OPTION) {
-            if (servicioController.eliminar(idServicio)) {
-                JOptionPane.showMessageDialog(this, "Servicio eliminado", "Exito", JOptionPane.INFORMATION_MESSAGE);
+            // Llamamos al controlador para borrar de la BD
+            boolean eliminado = servicioController.eliminar(idServicio);
+
+            if (eliminado) {
+                // ¡ESTO ES LO IMPORTANTE!: Refrescar la lista completa y la tabla
                 cargarDatos();
+                JOptionPane.showMessageDialog(this, "Servicio eliminado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar", "Error", JOptionPane.ERROR_MESSAGE);
+                // Si el DAO devuelve false, es probable que el servicio esté en uso en una cita
+                JOptionPane.showMessageDialog(this,
+                        "No se puede eliminar: El servicio está siendo usado en citas registradas.\n" +
+                                "Sugerencia: Edite el servicio y márquelo como 'Inactivo' en su lugar.",
+                        "Error de Integridad", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

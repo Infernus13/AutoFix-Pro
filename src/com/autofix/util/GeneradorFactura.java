@@ -55,7 +55,7 @@ public class GeneradorFactura {
             celdaEmpresa.setPaddingBottom(20);
 
             Paragraph nombreEmpresa = new Paragraph("AutoFix Pro", FONT_TITULO);
-            Paragraph direccionEmpresa = new Paragraph("Taller Mecanico Profesional\nCalle Principal 123\n14005 Córdoba\nTel: 912 912 912\nCIF: B12345678", FONT_NORMAL);
+            Paragraph direccionEmpresa = new Paragraph("Taller Mecánico Profesional\nCalle Principal 123\n14005 Córdoba\nTel: 912 912 912\nCIF: B12345678", FONT_NORMAL);
             direccionEmpresa.setSpacingBefore(10);
 
             celdaEmpresa.addElement(nombreEmpresa);

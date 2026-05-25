@@ -151,9 +151,10 @@ public class ServicioDAO {
         return false;
     }
 
-    // Elimina el servicio (o desactivar)
+    // Elimina el servicio
     public boolean eliminar(int id) {
-        String sql = "UPDATE servicios SET activo = false WHERE id = ?";
+
+        String sql = "DELETE FROM servicios WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -161,8 +162,9 @@ public class ServicioDAO {
             stmt.setInt(1, id);
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.out.println("Error al eliminar servicio: " + e.getMessage());
+            // Si falla aquí (ej: error de llave foránea), es porque el servicio está en una cita
+            System.out.println("No se puede borrar porque está en uso: " + e.getMessage());
+            return false;
         }
-        return false;
     }
 }
