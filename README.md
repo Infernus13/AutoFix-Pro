@@ -146,8 +146,8 @@ Importa el script SQL incluido en `/sql/autofix_pro.sql` desde MySQL Workbench o
 Edita el archivo de conexión con tus credenciales de MySQL:
 ```java
 String url = "jdbc:mysql://localhost:3306/autofix_pro";
-String user = "tu_usuario";
-String password = "tu_contraseña";
+String user = "admin@autofix.com";
+String password = "1234";
 ```
 
 **4. Ejecuta la aplicación**
